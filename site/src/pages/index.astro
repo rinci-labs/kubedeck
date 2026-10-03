@@ -1,0 +1,149 @@
+---
+import Base from "../layouts/Base.astro"
+
+const repository = "https://github.com/rinci-labs/kubedeck"
+const release = `${repository}/releases/tag/v0.1.0`
+const apk = `${repository}/releases/download/v0.1.0/KubeDeck-v0.1.0.apk`
+const features = [
+  { title: "Bring every cluster", description: "Import a kubeconfig and review its contexts before adding them, or enter a cluster by hand. Switch between saved profiles when your work moves." },
+  { title: "Find what’s running", description: "Browse resources from live API discovery—not a fixed menu. Namespaced resources, cluster-wide kinds, and CRDs all have a place." },
+  { title: "Follow workload health", description: "See workload status, conditions, events, and available pod metrics. Read YAML and owner relationships when a resource needs a closer look." },
+  { title: "Get closer to the pod", description: "Follow container logs, open an interactive exec session, or forward a pod port to your device over the Kubernetes API." },
+  { title: "Keep GitOps in view", description: "Inspect Helm release history and values, reconcile Flux resources, and refresh or sync Argo CD applications through the API." },
+  { title: "Use the cluster signals", description: "Check node capacity, cluster usage, and pod metrics when metrics-server is available. Missing metrics stay visibly unavailable—not zero." },
+]
+---
+
+<Base>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="wrap">
+    <header class="site-nav">
+      <a class="brand" href="#top" aria-label="KubeDeck home">
+        <svg class="brand-mark" viewBox="0 0 108 108" role="img" aria-label="KubeDeck mark">
+          <path fill="#326ce5" fill-rule="evenodd" d="M54 28 76.5 41v26L54 80 31.5 67V41L54 28Zm0 15.5a10.5 10.5 0 1 0 0 21 10.5 10.5 0 0 0 0-21Z" />
+        </svg>
+        <span>KubeDeck</span>
+      </a>
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-nav">Menu</button>
+      <nav class="nav-links" id="primary-nav" aria-label="Main navigation" data-open="false">
+        <a href="#features">Features</a>
+        <a href="#security">Security</a>
+        <a href={repository} target="_blank" rel="noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+        <a class="nav-download" href="#download">Download</a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero" id="top" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <span class="eyebrow">A Kubernetes client for Android</span>
+          <h1 id="hero-title">Kubernetes, <span>in your pocket.</span></h1>
+          <p class="hero-lede">Your Kubernetes clusters, in your pocket. A considered Android client for the resources, workloads, and tools you reach for every day.</p>
+          <div class="hero-actions">
+            <a class="button button-primary" href={apk}>
+              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 17v3h14v-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              Download APK
+            </a>
+            <a class="button button-secondary" href={repository} target="_blank" rel="noreferrer">View source <span aria-hidden="true">↗</span></a>
+          </div>
+          <div class="download-meta" aria-label="Release details">
+            <span><strong>v0.1.0</strong> · first release</span>
+            <span>2.2 MB APK</span>
+          </div>
+        </div>
+
+        <div class="phone-stage" role="img" aria-label="Illustrative KubeDeck cluster overview displayed on a phone">
+          <div class="phone" aria-hidden="true">
+            <div class="phone-status"><span>9:41</span><span>● ● ●</span></div>
+            <div class="phone-top"><h2 class="phone-title">Clusters</h2><span class="phone-avatar">RK</span></div>
+            <div class="phone-cluster">
+              <div class="phone-cluster-label"><span class="phone-dot"></span> Connected cluster</div>
+              <strong>production-east</strong>
+              <small>v1.31.2 · 3 nodes</small>
+            </div>
+            <div class="phone-section">Cluster overview <small>REFRESH ↻</small></div>
+            <div class="phone-stat-grid">
+              <div class="phone-stat"><strong>3 / 3</strong><span>Nodes ready</span></div>
+              <div class="phone-stat"><strong>12 / 14</strong><span>Pods running</span></div>
+              <div class="phone-stat"><strong>8</strong><span>Namespaces</span></div>
+              <div class="phone-stat"><strong>6 / 6</strong><span>Deployments</span></div>
+            </div>
+            <div class="phone-section">Recently opened <small>VIEW ALL</small></div>
+            <div class="phone-resource"><span class="resource-icon">D</span><div><strong>api-gateway</strong><span>Deployment · default</span></div><span class="phone-health">HEALTHY</span></div>
+            <div class="phone-resource"><span class="resource-icon">P</span><div><strong>worker-7bc8f</strong><span>Pod · jobs</span></div><span class="phone-health">RUNNING</span></div>
+            <div class="phone-resource"><span class="resource-icon">S</span><div><strong>primary-db</strong><span>StatefulSet · data</span></div><span class="phone-health">HEALTHY</span></div>
+            <div class="phone-nav"><b>Clusters</b><span>Browse</span><span>Events</span><span>Settings</span></div>
+          </div>
+          <span class="phone-caption">Illustrative interface · not a live cluster</span>
+        </div>
+      </section>
+
+      <section class="section" id="features" aria-labelledby="features-title">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">A focused toolkit</span>
+            <h2 id="features-title">The cluster, closer at hand.</h2>
+          </div>
+          <p>Made for inspection and everyday operations on the move. KubeDeck talks to the Kubernetes API directly, with actions governed by the access your account already has.</p>
+        </div>
+        <div class="feature-grid">
+          {features.map((feature, index) => (
+            <article class="feature-card">
+              <span class="feature-number">0{index + 1}</span>
+              <h3>{feature.title}</h3>
+              <p>{feature.description}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section class="security-band" id="security" aria-labelledby="security-title">
+        <div>
+          <span class="eyebrow">Security &amp; compatibility</span>
+          <h2 id="security-title">Your credentials stay on your device.</h2>
+        </div>
+        <div class="security-copy">
+          <p>Saved cluster profiles are encrypted with AES-256-GCM using an Android Keystore key and stored locally. Network requests go to the Kubernetes API server using your configured credentials and cluster TLS settings.</p>
+          <p>This is an early release distributed as a signed APK for direct installation. It is not published on Google Play. Review the source and your cluster access policies before installing or connecting.</p>
+          <div class="limitations"><strong>Know the edges:</strong> kubeconfig exec plugins and interactive OIDC login/refresh are not supported. Cleartext HTTP API servers are blocked; use HTTPS. Operations remain subject to cluster RBAC.</div>
+        </div>
+      </section>
+
+      <section class="download" id="download" aria-labelledby="download-title">
+        <div>
+          <span class="eyebrow">Version 0.1.0 · Android 8.0+</span>
+          <h2 id="download-title">Take KubeDeck with you.</h2>
+          <p>Download the APK from the GitHub release, or inspect the source and release notes before installing. APK signed with the Android debug key for local installation.</p>
+        </div>
+        <a class="button button-primary" href={apk}>Download APK <span aria-hidden="true">↓</span></a>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <a class="brand" href="#top">
+        <svg class="brand-mark" viewBox="0 0 108 108" aria-hidden="true"><path fill="#326ce5" fill-rule="evenodd" d="M54 28 76.5 41v26L54 80 31.5 67V41L54 28Zm0 15.5a10.5 10.5 0 1 0 0 21 10.5 10.5 0 0 0 0-21Z" /></svg>
+        <span>KubeDeck</span>
+      </a>
+      <div class="footer-links">
+        <a href={release}>Release notes</a>
+        <a href={`${repository}/blob/main/docs/FEATURES.md`}>Feature reference</a>
+        <a href={repository} target="_blank" rel="noreferrer">Open source ↗</a>
+      </div>
+      <span>Made by Rinci Labs</span>
+    </footer>
+  </div>
+
+  <script>
+    const toggle = document.querySelector<HTMLButtonElement>(".menu-toggle")
+    const nav = document.querySelector<HTMLElement>("#primary-nav")
+    toggle?.addEventListener("click", () => {
+      const expanded = toggle.getAttribute("aria-expanded") === "true"
+      toggle.setAttribute("aria-expanded", String(!expanded))
+      nav?.setAttribute("data-open", String(!expanded))
+    })
+    nav?.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => {
+      nav.setAttribute("data-open", "false")
+      toggle?.setAttribute("aria-expanded", "false")
+    }))
+  </script>
+</Base>

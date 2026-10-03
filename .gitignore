@@ -11,3 +11,6 @@ local.properties
 app/build
 .kotlin
 *.apk
+.astro/
+dist/
+node_modules/
