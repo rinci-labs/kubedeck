@@ -1,6 +1,6 @@
 # KubeDeck site
 
-Static landing page built with Astro 5 and Tailwind CSS 4. The GitHub Pages project base is configured in `astro.config.mjs`.
+Static landing page built with Astro 5 and Tailwind CSS 4. The production site is hosted on Cloudflare Pages at `https://kubedeck.pages.dev/`; `astro.config.mjs` sets the canonical site URL.
 
 ## Local development
 
