@@ -1,0 +1,146 @@
+# Android CI for KubeDeck (dev.rafa.kubemobile)
+#
+# Runs on Blacksmith runners (https://blacksmith.sh), which are faster
+# GitHub-hosted-replacement runners addressed purely by their `runs-on:` label.
+# The Blacksmith GitHub App MUST be installed on this repository's org for that
+# label to resolve — otherwise the job is never picked up and stays queued.
+# See app.blacksmith.sh and .github/workflows/README.md.
+#
+# This repo has no unit or instrumented test sources, so CI verifies only that
+# the debug and release APKs assemble, then publishes them as artifacts.
+
+name: Android CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Least privilege: actions/checkout only needs to read the repo.
+# No write scopes are required (release is signed with the debug key).
+permissions:
+  contents: read
+
+# Cancel superseded runs for the same ref (force-pushes / repeated PR pushes).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Assemble debug + release APKs
+    # Blacksmith runner label, verified against the Ubuntu 24.04 x64 "Runner
+    # Tags" table at https://docs.blacksmith.sh/blacksmith-runners/overview
+    # (and the example on https://docs.blacksmith.sh). 4 vCPU / 16 GB is a
+    # sensible Android build size; use `blacksmith-8vcpu-ubuntu-2404` if a
+    # larger machine proves worthwhile. Requires the Blacksmith GitHub App
+    # on the org, or this label resolves to nothing and the job queues forever.
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    # Fallback for forks / orgs without the Blacksmith App: instead of the line
+    # above, use exactly:
+    #   runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Mount Gradle user home on a Blacksmith sticky disk
+        # Gradle's dependency/artifact caches are large. Blacksmith documents
+        # sticky disks as the best fit for very large caches: the disk is
+        # hot-mounted in ~3s instead of downloading gigabytes from the Actions
+        # cache. See
+        # https://docs.blacksmith.sh/blacksmith-caching/dependencies-sticky-disks
+        # Mounted before Gradle runs so the rest of the job populates it.
+        # The disk is shared across runs in this repo; enable Branch Protection
+        # for sticky disks in the Blacksmith dashboard if you do not want
+        # pull_request runs to commit to it.
+        uses: useblacksmith/stickydisk@v1
+        with:
+          key: ${{ github.repository }}-gradle-home
+          path: ~/.gradle
+
+      - name: Set up JDK 21 (Temurin)
+        # app/build.gradle.kts compiles with Java 17 source/target and
+        # jvmTarget 17; JDK 21 (current LTS) is a safe toolchain that targets
+        # 17, and Gradle 9.7.1 supports it.
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+          # Do NOT also set `cache: gradle` here: gradle/actions/setup-gradle
+          # below owns Gradle caching, and both together would duplicate work.
+
+      - name: Set up Android SDK
+        # Pinned to the current major of android-actions/setup-android.
+        uses: android-actions/setup-android@v4
+
+      - name: Install Android platform and build-tools
+        run: |
+          # app/build.gradle.kts pins compileSdk = 37 / targetSdk = 37, so we
+          # need platforms;android-37 and a matching build-tools.
+          # Accept licenses non-interactively first.
+          yes | sdkmanager --licenses > /dev/null || true
+          # AGP can auto-download missing SDK components once licenses are
+          # accepted, so an exact-package miss here is not fatal — but try the
+          # pinned components first.
+          sdkmanager "platforms;android-37" "build-tools;37.0.0" \
+            || echo "::warning::Explicit SDK install failed; AGP will attempt to auto-download on demand."
+
+      - name: Set up Gradle
+        # Pins the wrapper distribution and caches/restores the Gradle user home.
+        # On Blacksmith this transparently uses their colocated cache (~4x faster
+        # than GitHub's backend) with no code change required:
+        # https://docs.blacksmith.sh/blacksmith-caching/dependencies-actions
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Make Gradle wrapper executable
+        # The committed wrapper must be executable on Linux. Always invoke
+        # ./gradlew (never a bare `gradle`) so the pinned 9.7.1 wrapper is used.
+        run: chmod +x ./gradlew
+
+      - name: Build debug and release APKs
+        # gradle.properties already enables the configuration cache
+        # (org.gradle.configuration-cache=true); passing the flag states CI's
+        # intent explicitly. --no-daemon is correct for ephemeral CI runners.
+        # --stacktrace only adds output when the build fails.
+        run: >-
+          ./gradlew --no-daemon --configuration-cache --stacktrace
+          :app:assembleDebug :app:assembleRelease
+
+      - name: Publish APK sizes and SHA-256 to the job summary
+        if: always()
+        run: |
+          shopt -s nullglob
+          apks=(app/build/outputs/apk/*/*.apk)
+          if [ ${#apks[@]} -eq 0 ]; then
+            echo "No APKs were produced." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          {
+            echo "## Build artifacts"
+            echo ""
+            echo "| APK | Size (bytes) | SHA-256 |"
+            echo "| --- | ---: | --- |"
+            for apk in "${apks[@]}"; do
+              echo "| $(basename "$apk") | $(stat -c%s "$apk") | $(sha256sum "$apk" | cut -d' ' -f1) |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload debug APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kubedeck-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: warn
+
+      - name: Upload release APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kubedeck-release-apk
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: warn

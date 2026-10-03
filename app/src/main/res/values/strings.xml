@@ -1,0 +1,552 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">KubeDeck</string>
+
+    <!-- Shared actions -->
+    <string name="action_copy_named" formatted="false">Copy %1$s</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_close">Close</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_copied">Copied to clipboard</string>
+    <string name="action_share">Share</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_duplicate">Duplicate</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_save">Save</string>
+    <string name="action_apply">Apply</string>
+    <string name="action_refresh">Refresh</string>
+    <string name="action_search">Search</string>
+    <string name="action_add">Add</string>
+    <string name="action_back">Back</string>
+    <string name="action_ok">OK</string>
+    <string name="action_done">Done</string>
+    <string name="action_open">Open</string>
+    <string name="action_create">Create</string>
+    <string name="action_start">Start</string>
+    <string name="action_stop">Stop</string>
+    <string name="action_more">More actions</string>
+    <string name="action_clear">Clear</string>
+    <string name="action_dismiss">Dismiss</string>
+    <string name="action_jump_latest">Jump to latest</string>
+    <string name="action_select_all">Select all</string>
+    <string name="action_none">None</string>
+    <string name="action_previous">Previous</string>
+    <string name="action_reload_discovery">Reload discovery</string>
+    <string name="action_forget_cluster">Forget cluster</string>
+    <string name="action_set_active">Set as active</string>
+    <string name="action_edit_namespace">Edit namespace</string>
+    <string name="action_connect">Connect</string>
+    <string name="action_reconnect">Reconnect</string>
+    <string name="action_reconcile">Reconcile</string>
+    <string name="action_suspend">Suspend</string>
+    <string name="action_resume">Resume</string>
+    <string name="action_sync">Sync</string>
+    <string name="action_terminate">Terminate</string>
+    <string name="action_restart_rollout">Rollout restart</string>
+    <string name="action_rollout_undo">Rollout undo</string>
+    <string name="action_scale">Scale</string>
+    <string name="action_logs">Logs</string>
+    <string name="action_shell">Shell</string>
+    <string name="action_port_forward">Port-forward</string>
+    <string name="action_uninstall">Uninstall</string>
+    <string name="action_revision">Revision</string>
+    <string name="action_filter">Filter</string>
+    <string name="action_import_kubeconfig">Import kubeconfig</string>
+
+    <!-- Common states -->
+    <string name="state_loading">Loading…</string>
+    <string name="state_connecting">Connecting…</string>
+    <string name="state_error">Something went wrong</string>
+    <string name="state_empty">Nothing here</string>
+    <string name="state_no_cluster_title">No cluster connected</string>
+    <string name="state_no_cluster_body">Connect to a cluster from the Clusters tab to browse its resources.</string>
+    <string name="state_go_to_clusters">Go to clusters</string>
+    <string name="state_no_matches">No matches</string>
+    <string name="state_loading_more">Loading more…</string>
+    <string name="state_session_closed">Session closed</string>
+    <string name="state_apply_failed">Apply failed</string>
+    <string name="state_unsupported">Not supported by this API</string>
+
+    <!-- Labels -->
+    <string name="label_namespace">Namespace</string>
+    <string name="label_name">Name</string>
+    <string name="label_kind">Kind</string>
+    <string name="label_age">Age</string>
+    <string name="label_status">Status</string>
+    <string name="label_labels">Labels</string>
+    <string name="label_annotations">Annotations</string>
+    <string name="label_created">Created</string>
+    <string name="label_revision">Revision</string>
+    <string name="label_replicas">Replicas</string>
+    <string name="label_container">Container</string>
+    <string name="label_containers">Containers</string>
+    <string name="label_port">Port</string>
+    <string name="label_ports">Ports</string>
+    <string name="label_protocol">Protocol</string>
+    <string name="label_image">Image</string>
+    <string name="label_node">Node</string>
+    <string name="label_restarts">Restarts</string>
+    <string name="label_selector">Label selector</string>
+    <string name="label_version">Version</string>
+    <string name="label_group">Group</string>
+    <string name="label_server">Server</string>
+    <string name="label_auth">Authentication</string>
+    <string name="label_source">Source</string>
+    <string name="label_message">Message</string>
+    <string name="label_reason">Reason</string>
+    <string name="label_type">Type</string>
+    <string name="label_chart">Chart</string>
+    <string name="label_app_version">App version</string>
+    <string name="label_updated">Updated</string>
+    <string name="label_history">History</string>
+    <string name="label_notes">Notes</string>
+    <string name="label_manifest">Manifest</string>
+    <string name="label_overview">Overview</string>
+    <string name="label_values">Chart values</string>
+    <string name="label_user_values">User values</string>
+    <string name="label_summary">Summary</string>
+    <string name="label_yaml">YAML</string>
+    <string name="label_events">Events</string>
+    <string name="label_owner">Owner</string>
+    <string name="label_created_by">Created by</string>
+    <string name="label_all_namespaces">All namespaces</string>
+    <string name="label_namespaced">Namespace-scoped</string>
+    <string name="label_cluster_scoped">Cluster-scoped</string>
+    <string name="label_conditions">Conditions</string>
+    <string name="label_metadata">Metadata</string>
+    <string name="label_generation">Generation</string>
+    <string name="label_resource_version">Resource version</string>
+    <string name="label_uid">UID</string>
+    <string name="label_api_version">API version</string>
+    <string name="label_tail">Tail lines</string>
+    <string name="label_timestamps">Timestamps</string>
+    <string name="label_time">Time</string>
+    <string name="label_follow">Follow</string>
+    <string name="label_previous">Previous container</string>
+    <string name="label_shell">Shell</string>
+    <string name="label_transfer">Transferred</string>
+    <string name="label_local_port">Local port</string>
+    <string name="label_remote_port">Remote port</string>
+    <string name="terminal_options">Terminal options</string>
+    <string name="label_ownership_controller">Ownership &amp; controller</string>
+    <string name="label_search">Search</string>
+    <string name="label_sync">Sync</string>
+    <string name="label_health">Health</string>
+    <string name="label_target_revision">Target revision</string>
+    <string name="label_destination">Destination</string>
+    <string name="label_last_operation">Last operation</string>
+    <string name="label_reason_count" formatted="false">%1$d warning</string>
+    <string name="label_interval">Interval</string>
+    <string name="label_url">URL</string>
+    <string name="label_suspended">Suspended</string>
+    <string name="label_involved_object">Involved object</string>
+    <string name="label_count" formatted="false">%1$d items</string>
+    <string name="label_cluster_info">Cluster</string>
+    <string name="label_tls">TLS verification</string>
+    <string name="label_insecure_tls">Skip TLS verification</string>
+    <string name="label_about">About</string>
+    <string name="label_context_name">Context</string>
+    <string name="auth_short_cert">Cert</string>
+    <string name="auth_short_token">Token</string>
+    <string name="auth_short_basic">Basic</string>
+    <string name="auth_short_none">None</string>
+    <string name="list_scope_all">All namespaces</string>
+    <string name="list_scope_count" formatted="false">%1$s of %2$d</string>
+    <string name="list_no_matches_body" formatted="false">No object name contains "%1$s". Clear the filter to see everything in this scope.</string>
+    <string name="clusters_connecting" formatted="false">Connecting to %1$s…</string>
+    <string name="clusters_connected_snack" formatted="false">Connected to %1$s</string>
+    <string name="action_retry_connect">Retry</string>
+    <string name="label_gitops">GitOps</string>
+    <string name="label_catalog">Catalog</string>
+    <string name="label_common">Common</string>
+    <string name="label_core">Core v1</string>
+    <string name="label_custom_resources">Custom resources</string>
+    <string name="label_dashboards">Dashboards</string>
+    <string name="label_contexts" formatted="false">%1$d contexts found</string>
+    <string name="label_warnings">Warnings</string>
+    <string name="label_paste">Paste</string>
+    <string name="label_file">File</string>
+    <string name="label_manual">Manual</string>
+    <string name="label_release" formatted="false">revision %1$d</string>
+    <string name="label_bytes_up" formatted="false">↑ %1$s</string>
+    <string name="label_bytes_down" formatted="false">↓ %1$s</string>
+    <string name="label_ready_of" formatted="false">%1$d/%2$d ready</string>
+
+    <!-- Clusters -->
+    <string name="clusters_title">Clusters</string>
+    <string name="clusters_empty_title">No clusters yet</string>
+    <string name="clusters_empty_body">Import a kubeconfig file, paste a kubeconfig, or add a cluster manually. One kubeconfig with several contexts gives you several switchable clusters.</string>
+    <string name="clusters_active">Active</string>
+    <string name="clusters_state_connected">Connected</string>
+    <string name="clusters_state_idle">Not connected</string>
+    <string name="clusters_state_connecting">Connecting…</string>
+    <string name="clusters_state_failed">Connection failed</string>
+    <string name="clusters_import_title">Import kubeconfig</string>
+    <string name="clusters_import_body">Paste the contents of a kubeconfig file. Every context becomes its own cluster.</string>
+    <string name="clusters_import_file">Choose file</string>
+    <string name="clusters_import_hint">kubeconfig YAML</string>
+    <string name="clusters_import_parse">Parse</string>
+    <string name="clusters_import_select">Select the contexts to import</string>
+    <string name="clusters_import_confirm" formatted="false">Import %1$d clusters</string>
+    <string name="clusters_import_failed">Could not read the kubeconfig</string>
+    <string name="clusters_import_none">No contexts selected</string>
+    <string name="clusters_read_failed">Could not read the selected file</string>
+    <string name="clusters_delete_title" formatted="false">Delete %1$s?</string>
+    <string name="clusters_delete_body">The credentials for this cluster are removed from this device. Nothing on the cluster is touched.</string>
+    <string name="clusters_namespace_title">Default namespace</string>
+    <string name="clusters_namespace_body" formatted="false">Default namespace for %1$s</string>
+    <string name="clusters_add_title">Add cluster manually</string>
+    <string name="clusters_field_name">Name</string>
+    <string name="clusters_field_server">Server URL</string>
+    <string name="clusters_field_namespace">Namespace</string>
+    <string name="clusters_field_token">Bearer token</string>
+    <string name="clusters_field_username">Username</string>
+    <string name="clusters_field_password">Password</string>
+    <string name="clusters_field_cert">Client certificate (PEM)</string>
+    <string name="clusters_field_key">Client key (PEM)</string>
+    <string name="clusters_field_ca">Custom CA certificate (PEM)</string>
+    <string name="clusters_section_auth">Credentials</string>
+    <string name="clusters_auth_token">Token</string>
+    <string name="clusters_auth_basic">Username and password</string>
+    <string name="clusters_auth_client_cert">Client certificate</string>
+    <string name="clusters_insecure">Skip TLS certificate verification</string>
+    <string name="clusters_save">Save cluster</string>
+    <string name="clusters_invalid">Name and server URL are required</string>
+    <string name="clusters_duplicate_suffix"> copy</string>
+    <string name="clusters_connected" formatted="false">Connected to %1$s</string>
+    <string name="clusters_connect_failed" formatted="false">Could not connect to %1$s</string>
+    <string name="clusters_saved" formatted="false">Saved %1$d clusters</string>
+    <string name="clusters_updated">Cluster updated</string>
+
+    <!-- Browse -->
+    <string name="browse_title">Browse</string>
+    <string name="browse_filter_hint">Filter kinds, groups, short names</string>
+    <string name="browse_no_cluster">Connect to a cluster to load its API catalog.</string>
+    <string name="browse_gitops_flux">Flux</string>
+    <string name="browse_gitops_flux_body">Kustomizations, HelmReleases and sources</string>
+    <string name="browse_gitops_argo">Argo CD</string>
+    <string name="browse_gitops_argo_body">Applications and ApplicationSets</string>
+    <string name="browse_events">Cluster events</string>
+    <string name="browse_events_body">Newest first, grouped by object</string>
+    <string name="browse_settings">Settings</string>
+    <string name="browse_settings_body">Cluster, TLS and discovery options</string>
+    <string name="browse_helm">Helm releases</string>
+    <string name="browse_helm_body">Releases, values, manifests and history</string>
+    <string name="browse_namespaced">namespaced</string>
+    <string name="browse_cluster_scoped">cluster</string>
+    <string name="label_recent">Recent</string>
+    <string name="browse_no_matches_body">No kind matches the current search and filters.</string>
+    <string name="action_clear_filters">Clear filters</string>
+    <string name="browse_scope_all">All</string>
+    <string name="browse_groups">Groups</string>
+    <string name="browse_groups_count" formatted="false">Groups · %1$d</string>
+    <string name="browse_group_kinds" formatted="false">%1$d kinds</string>
+    <string name="browse_namespace_body">The namespace a resource list opens in. Cluster-scoped kinds ignore it.</string>
+    <string name="browse_namespace_hint" formatted="false">%1$d namespaces</string>
+    <string name="label_api_groups">API groups</string>
+
+    <!-- Resource list -->
+    <string name="list_search_hint">Filter by name</string>
+    <string name="list_selector_hint">app=nginx,tier=web</string>
+    <string name="list_all">All</string>
+    <string name="list_empty_title">No objects</string>
+    <string name="list_empty_body">This resource type exists in the cluster but has no objects in the current scope.</string>
+    <string name="list_forbidden_title">Access denied</string>
+    <string name="list_namespace_required">Pick a namespace to list this resource.</string>
+    <string name="list_delete_title" formatted="false">Delete %1$s?</string>
+    <string name="list_delete_body">The object is removed from the cluster. This cannot be undone.</string>
+    <string name="list_delete_body_confirm" formatted="false">Type %1$s to confirm the deletion.</string>
+    <string name="list_deleted" formatted="false">Deleted %1$s</string>
+    <string name="list_scale_title" formatted="false">Scale %1$s</string>
+    <string name="list_scale_body">Replicas</string>
+    <string name="list_scaled" formatted="false">Scaled %1$s to %2$d</string>
+    <string name="list_restart_done" formatted="false">Rollout restart requested for %1$s</string>
+    <string name="list_create_title" formatted="false">Create %1$s</string>
+    <string name="list_created" formatted="false">Created %1$s</string>
+
+    <!-- Detail -->
+    <string name="detail_not_found" formatted="false">%1$s no longer exists</string>
+    <string name="detail_confirm_delete">Delete object</string>
+    <string name="detail_apply_title">Apply changes</string>
+    <string name="detail_apply_check" formatted="false">Apply %1$s/%2$s?</string>
+    <string name="detail_apply_mismatch" formatted="false">The document is %1$s named %2$s but this screen edits %3$s named %4$s.</string>
+    <string name="detail_apply_ok" formatted="false">Applied %1$s</string>
+    <string name="detail_yaml_readonly">YAML is read-only until you tap Edit.</string>
+    <string name="detail_edit">Edit</string>
+    <string name="detail_undo_revision">Which revision?</string>
+    <string name="detail_undo_done" formatted="false">Rolled back to %1$s</string>
+    <string name="detail_reconcile_done">Reconcile requested</string>
+    <string name="detail_suspend_done" formatted="false">%1$s requested</string>
+    <string name="detail_argo_refresh">Refresh</string>
+    <string name="detail_argo_hard_refresh">Hard refresh</string>
+    <string name="detail_argo_sync">Sync</string>
+    <string name="detail_argo_sync_title" formatted="false">Sync %1$s</string>
+    <string name="detail_argo_revision_hint">Revision (optional)</string>
+    <string name="detail_argo_prune">Prune resources no longer in Git</string>
+    <string name="detail_argo_dry_run">Dry run</string>
+    <string name="detail_argo_sync_done">Sync requested</string>
+    <string name="detail_argo_terminated">Operation terminated</string>
+    <string name="detail_no_events">No events recorded for this object.</string>
+    <string name="detail_container_state">State</string>
+    <string name="detail_no_containers">No containers reported yet.</string>
+    <string name="detail_created_by" formatted="false">Managed by %1$s/%2$s</string>
+    <string name="detail_generation_stale">Controller has not observed the latest generation</string>
+    <string name="detail_forward">Forward</string>
+
+    <!-- Logs -->
+    <string name="logs_title" formatted="false">Logs · %1$s</string>
+    <string name="logs_tail_size">Tail</string>
+    <string name="logs_share">Share log</string>
+    <string name="logs_copy_all">Copy whole log</string>
+    <string name="logs_empty">Waiting for output…</string>
+    <string name="logs_stopped">Stream stopped</string>
+    <string name="logs_all_pods">All pods</string>
+    <string name="logs_pod">Pod</string>
+    <string name="logs_no_pods">No pods found for this workload.</string>
+    <string name="logs_no_pods_body" formatted="false">Looked for pods selected by %1$s, then for pods owned by it. None exist right now.</string>
+    <string name="logs_capped" formatted="false">Showing %1$d of %2$d pods</string>
+    <string name="logs_options_merged" formatted="false">Merged logs always read every container of each pod, so the container picker is hidden.</string>
+    <string name="logs_follow_hint">Stream new lines as they arrive</string>
+    <string name="logs_previous_hint">Read the previous instance of the container</string>
+
+    <!-- Terminal -->
+    <string name="terminal_title" formatted="false">Shell · %1$s</string>
+    <string name="terminal_input_hint">Command</string>
+    <string name="terminal_send">Send</string>
+    <string name="terminal_ctrl_c">Send Ctrl-C</string>
+    <string name="terminal_esc">Send Escape</string>
+    <string name="terminal_tab">Send Tab</string>
+    <string name="terminal_closed_body">The exec session ended. Reconnect to open a new shell in this pod.</string>
+    <string name="terminal_banner">Connected. Commands run inside the container.</string>
+    <string name="terminal_waiting">Waiting for output…</string>
+    <string name="terminal_closed_hint">Nothing came back. Some container images (distroless or scratch, for example) ship no shell at the requested path — try another shell under Stream options and reconnect. The API server said:</string>
+
+    <!-- Port forward -->
+    <string name="pf_title" formatted="false">Port-forward · %1$s</string>
+    <string name="pf_no_ports">This pod declares no container ports. Forwarding still works if you know a port.</string>
+    <string name="pf_custom_port">Custom remote port</string>
+    <string name="pf_active">Active forwards</string>
+    <string name="pf_none_active">No active forwards. Start one from a port below.</string>
+    <string name="pf_started" formatted="false">Forwarding 127.0.0.1:%1$d to %2$s:%3$d</string>
+    <string name="pf_failed" formatted="false">Port-forward failed: %1$s</string>
+    <string name="pf_stopped">Forward stopped</string>
+    <string name="pf_hint" formatted="false">127.0.0.1:%1$d</string>
+
+    <!-- Helm -->
+    <string name="helm_title">Helm</string>
+    <string name="helm_empty_title">No Helm releases</string>
+    <string name="helm_empty_body">Release secrets (owner=helm) and Tiller config maps were searched in the selected namespaces.</string>
+    <string name="helm_release_title" formatted="false">%1$s/%2$s</string>
+    <string name="helm_uninstall_title" formatted="false">Uninstall %1$s?</string>
+    <string name="helm_uninstall_delete_resources">Also delete the Kubernetes resources created by this release</string>
+    <string name="helm_uninstall_warning">Helm hooks are not re-run and the release history is erased. Deletion follows the newest revision manifest.</string>
+    <string name="helm_uninstalled" formatted="false">Uninstalled %1$s</string>
+    <string name="helm_uninstall_problems" formatted="false">Uninstall finished with %1$d problems</string>
+    <string name="helm_manifest_empty">This revision stored no manifest.</string>
+    <string name="helm_notes_empty">This revision stored no notes.</string>
+    <string name="helm_not_found">Release not found in this namespace.</string>
+    <string name="helm_entries">Resources in this revision</string>
+    <string name="helm_values_empty">No values recorded.</string>
+
+    <!-- Flux -->
+    <string name="flux_title">Flux</string>
+    <string name="flux_missing_title">Flux is not installed</string>
+    <string name="flux_missing_body" formatted="false">Looked for the CRDs kustomizations.kustomize.toolkit.fluxcd.io, helmreleases.helm.toolkit.fluxcd.io, gitrepositories.source.toolkit.fluxcd.io, ocirepositories.source.toolkit.fluxcd.io, helmrepositories.source.toolkit.fluxcd.io and buckets.source.toolkit.fluxcd.io.</string>
+    <string name="flux_kustomizations">Kustomizations</string>
+    <string name="flux_helmreleases">HelmReleases</string>
+    <string name="flux_sources">Sources</string>
+    <string name="flux_suspended">Suspended</string>
+    <string name="flux_reconcile_with_source">Also reconcile the source</string>
+    <string name="flux_ready_summary" formatted="false">%1$d ready of %2$d</string>
+    <string name="flux_not_ready_summary" formatted="false">%1$d not ready</string>
+
+    <!-- Argo CD -->
+    <string name="argo_title">Argo CD</string>
+    <string name="argo_missing_title">Argo CD is not installed</string>
+    <string name="argo_missing_body">Looked for the CRDs applications.argoproj.io and applicationsets.argoproj.io.</string>
+    <string name="argo_applications">Applications</string>
+    <string name="argo_applicationsets">ApplicationSets</string>
+    <string name="argo_empty">No Applications in this cluster.</string>
+    <string name="argo_sets_empty">No ApplicationSets in this cluster.</string>
+    <string name="argo_synced_to">Synced to</string>
+
+    <!-- Events -->
+    <string name="events_title">Events</string>
+    <string name="events_empty_title">No events</string>
+    <string name="events_empty_body">The API server returned no recent events in this scope.</string>
+    <string name="events_warning">Warning</string>
+    <string name="events_normal">Normal</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_no_cluster">No cluster selected.</string>
+    <string name="settings_auth_kind" formatted="false">%1$s</string>
+    <string name="settings_tls_verified">Certificate verified</string>
+    <string name="settings_tls_insecure">Verification disabled</string>
+    <string name="settings_exec_warning" formatted="false">This kubeconfig uses the exec credential plugin %1$s, which cannot run on Android. Import a static token or certificate instead.</string>
+    <string name="settings_provider_warning" formatted="false">This kubeconfig uses the %1$s auth-provider. Only a token stored in the config can be used on Android.</string>
+    <string name="settings_discovery_reloaded">Discovery reloaded</string>
+    <string name="settings_forget_title" formatted="false">Forget %1$s?</string>
+    <string name="settings_forget_body">Removes the stored credentials and cached discovery for this cluster from this device.</string>
+    <string name="settings_about_body">Cluster credentials are encrypted with an AES-GCM key held in the Android Keystore and never leave this device except as Authorization headers to the API server you configured.</string>
+    <string name="settings_diagnostics">Diagnostics</string>
+    <string name="settings_api_groups" formatted="false">%1$d API groups · %2$d resource kinds</string>
+    <string name="settings_namespaces" formatted="false">%1$d namespaces visible</string>
+    <string name="settings_forgotten" formatted="false">Forgot %1$s</string>
+
+    <!-- Cluster summary -->
+    <string name="summary_title">Cluster</string>
+    <string name="summary_k8s_version" formatted="false">Kubernetes %1$s</string>
+    <string name="summary_version_unknown">Kubernetes version unavailable</string>
+    <string name="summary_nodes">Nodes ready</string>
+    <string name="summary_namespaces">Namespaces</string>
+    <string name="summary_pods">Pods running</string>
+    <string name="summary_deployments">Deployments ready</string>
+    <string name="summary_usage">Cluster usage</string>
+    <string name="summary_metrics_unavailable">Metrics unavailable — metrics-server not detected</string>
+    <string name="summary_metrics_unavailable_hint">Install metrics-server to see cluster CPU and memory against the nodes\' allocatable capacity.</string>
+    <string name="summary_attention">Needs attention</string>
+    <string name="summary_all_healthy">Everything looks healthy: no failing workloads, no warning events.</string>
+    <string name="summary_sources_unavailable">Some sources could not be read, so this is not a clean bill of health:</string>
+    <string name="summary_metrics_error">Metrics unavailable — the request was refused or failed</string>
+    <string name="summary_metrics_error_hint">The metrics API exists but this account cannot read it, or the request failed. Check metrics.k8s.io permissions.</string>
+    <string name="summary_not_ready_pods">Pods not ready</string>
+    <string name="summary_unavailable_deployments">Deployments unavailable</string>
+    <string name="summary_failing_kustomizations">Flux Kustomizations failing</string>
+    <string name="summary_failing_helmreleases">Flux HelmReleases failing</string>
+    <string name="summary_recent_warnings">Recent warnings</string>
+    <string name="summary_quick_links">Quick links</string>
+
+    <!-- Errors -->
+    <string name="error_forbidden_title">Access denied</string>
+    <string name="error_forbidden_body" formatted="false">These credentials cannot perform this request. Ask a cluster administrator for RBAC access, or import a kubeconfig with more rights. The API server said: %1$s</string>
+    <string name="error_unauthorized_title">Not authenticated</string>
+    <string name="error_unauthorized_body" formatted="false">The API server rejected the credentials for this cluster. Edit the cluster and import a fresh token or certificate. The API server said: %1$s</string>
+    <string name="error_network_title">Cannot reach the API server</string>
+    <string name="error_discovery_title">Discovery failed</string>
+    <string name="error_generic_title">Request failed</string>
+    <string name="error_not_found_body" formatted="false">%1$s</string>
+    <string name="error_missing_cluster">No cluster is selected. Add one from the Clusters tab.</string>
+    <string name="error_details">Technical detail</string>
+
+    <!-- Extras -->
+    <string name="logs_paused">Auto-scroll paused</string>
+    <string name="logs_resume">Resume auto-scroll</string>
+    <string name="detail_no_owner">No owner references</string>
+    <string name="detail_owner_controller">controller</string>
+    <string name="detail_image_updated">Rollout in progress</string>
+    <string name="detail_conditions_empty">No conditions reported.</string>
+    <string name="detail_containers_tab">Containers</string>
+    <string name="catalog_sections">Resource kinds</string>
+    <string name="helm_all_namespaces">All releases</string>
+    <string name="argo_autosync">Auto-sync</string>
+    <string name="common_tab">Common</string>
+    <string name="flux_sources_short">Sources</string>
+    <string name="events_involved_kind" formatted="false">%1$s</string>
+    <string name="events_count_badge" formatted="false">%1$d</string>
+    <string name="list_deleted_foreground" formatted="false">Deleted %1$s</string>
+    <string name="nav_clusters">Clusters</string>
+    <string name="nav_browse">Browse</string>
+    <string name="nav_gitops">GitOps</string>
+    <string name="nav_events">Events</string>
+    <string name="nav_settings">Settings</string>
+    <string name="gitops_sheet_title">GitOps and tools</string>
+    <string name="label_uptime">Age</string>
+    <string name="label_last_deployed">Last deployed</string>
+    <string name="label_history_revision" formatted="false">Revision %1$d</string>
+    <string name="label_search_manifest">Search resources in manifest</string>
+    <string name="label_no_selection">No namespaces selected — searching all namespaces</string>
+    <string name="detail_scale_current" formatted="false">Currently %1$d replicas</string>
+    <string name="detail_apply_created" formatted="false">Created %1$s</string>
+    <string name="detail_apply_updated" formatted="false">Replaced %1$s</string>
+    <string name="detail_copy_yaml">Copy YAML</string>
+    <string name="logs_container">Container</string>
+    <string name="logs_options">Stream options</string>
+    <string name="pf_custom_hint">8080</string>
+    <string name="pf_in_use" formatted="false">Port %1$d is already forwarded</string>
+    <string name="terminal_connecting">Opening shell…</string>
+    <string name="terminal_tty">Allocate TTY</string>
+    <string name="browse_group_label" formatted="false">%1$s</string>
+    <string name="list_row_secondary_separator"> · </string>
+    <string name="no_ports_declared">No ports declared</string>
+    <string name="label_replicas_ready" formatted="false">Replicas</string>
+    <string name="flux_missing_hint">Install Flux into this cluster, or open the Browse tab to list its CRDs once they exist.</string>
+    <string name="argo_missing_hint">Install Argo CD into this cluster, or open the Browse tab to list its CRDs once they exist.</string>
+    <string name="clusters_select_contexts">Deselect a context to skip it.</string>
+    <string name="clusters_parser_warnings_empty">No warnings.</string>
+    <string name="settings_persist_hint">Changes are saved to this device only.</string>
+    <string name="label_usage">Usage</string>
+    <string name="label_cpu">CPU</string>
+    <string name="label_memory">Memory</string>
+    <string name="metrics_unavailable">Metrics are unavailable because metrics-server is not installed on this cluster.</string>
+    <string name="metrics_request_failed" formatted="false">Metrics unavailable: %1$s</string>
+    <string name="node_allocatable">Allocatable</string>
+    <string name="node_capacity">Capacity</string>
+    <string name="node_usage_unavailable">Per-node usage is not read by this app; only the node\'s own allocatable and capacity are shown.</string>
+    <string name="action_cordon">Cordon</string>
+    <string name="action_uncordon">Uncordon</string>
+    <string name="action_drain">Drain</string>
+    <string name="drain_title" formatted="false">Drain %1$s?</string>
+    <string name="drain_body">Every pod on this node is evicted so the node can be worked on. Pods protected by a PodDisruptionBudget can refuse eviction and will be reported. The node is not marked unschedulable by this action.</string>
+    <string name="drain_include_daemonsets">Also evict DaemonSet pods</string>
+    <string name="drain_done" formatted="false">%1$d pods evicted from %2$s</string>
+    <string name="cordon_done" formatted="false">%1$s is now %2$s</string>
+    <string name="string_schedulable">schedulable</string>
+    <string name="string_unschedulable">unschedulable</string>
+    <string name="detail_no_object">The object could not be loaded.</string>
+    <string name="detail_previous_revision">Back to the revision before the current one</string>
+    <string name="detail_share_yaml">Share YAML</string>
+
+    <!-- Controller tab -->
+    <string name="label_controller">Controller</string>
+    <string name="label_controller_spec">Controller spec</string>
+    <string name="label_update_strategy">Update strategy</string>
+    <string name="label_revision_history">Revision history limit</string>
+    <string name="label_progress_deadline">Progress deadline</string>
+    <string name="label_min_ready">Minimum ready seconds</string>
+    <string name="label_pod_management">Pod management policy</string>
+    <string name="label_sync_policy">Sync policy</string>
+    <string name="label_operation_state">Last operation</string>
+    <string name="label_suspend">Suspended</string>
+    <string name="label_prune">Prune</string>
+    <string name="label_target_namespace">Target namespace</string>
+    <string name="label_taints">Taints</string>
+    <string name="label_schedulable">Schedulable</string>
+    <string name="label_strategy_type">Strategy</string>
+    <string name="label_max_surge">Max surge</string>
+    <string name="label_max_unavailable">Max unavailable</string>
+    <string name="label_completion">Completion</string>
+    <string name="label_parallelism">Parallelism</string>
+    <string name="label_backoff_limit">Backoff limit</string>
+    <string name="label_schedule">Schedule</string>
+    <string name="label_concurrency_policy">Concurrency policy</string>
+    <string name="string_yes">Yes</string>
+    <string name="string_no">No</string>
+
+    <!-- ReplicaSets tab -->
+    <string name="label_replicasets">ReplicaSets</string>
+    <string name="label_current_revision">Current</string>
+    <string name="detail_replicaset_current">Current revision</string>
+    <string name="detail_no_replicasets">This Deployment has no ReplicaSets yet.</string>
+    <string name="detail_replicaset_replicas" formatted="false">%1$d desired · %2$d current · %3$d ready</string>
+
+    <!-- Pods / Jobs tabs -->
+    <string name="label_pods">Pods</string>
+    <string name="label_jobs">Jobs</string>
+    <string name="label_active">Active</string>
+    <string name="label_succeeded">Succeeded</string>
+    <string name="label_failed">Failed</string>
+    <string name="state_unknown">Unknown</string>
+    <string name="status_complete">Complete</string>
+    <string name="status_running">Running</string>
+    <string name="detail_no_controller">This object declares no controlling spec and has no owner references.</string>
+    <string name="detail_no_pods">No pods are owned by this object right now.</string>
+    <string name="detail_no_jobs">This CronJob has not run yet.</string>
+    <string name="detail_pod_ready" formatted="false">%1$d/%2$d ready</string>
+    <string name="detail_pod_restarts" formatted="false">%1$d restarts</string>
+    <string name="detail_pod_not_ready">No container statuses reported.</string>
+    <string name="list_partial">Some namespaces could not be listed; showing what is visible.</string>
+    <string name="list_restart_body" formatted="false">Restart the pods of %1$s by stamping a new pod template?</string>
+    <string name="container_param">Container</string>
+</resources>

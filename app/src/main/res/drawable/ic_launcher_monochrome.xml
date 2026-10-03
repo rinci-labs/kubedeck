@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Single-colour silhouette of the KubeDeck mark for themed icons. The system tints this layer,
+  so it must be one flat colour with the node cut out via even-odd fill, never the multicolour
+  foreground.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M54,28 L76.5,41 L76.5,67 L54,80 L31.5,67 L31.5,41 Z M54,43.5 A10.5,10.5 0 1,0 54,64.5 A10.5,10.5 0 1,0 54,43.5 Z" />
+</vector>
