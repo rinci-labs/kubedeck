@@ -3,7 +3,7 @@
 KubeDeck is an Android Kubernetes client for inspecting and operating clusters from a phone,
 built with Kotlin, Jetpack Compose and Material 3.
 
-**[Visit the KubeDeck website](https://rinci-labs.github.io/kubedeck/)** · **[Download the latest APK](https://github.com/rinci-labs/kubedeck/releases/tag/v0.1.0)**
+**[Visit the KubeDeck website](https://kubedeck.pages.dev/)** · **[Download the latest APK](https://github.com/rinci-labs/kubedeck/releases/tag/v0.1.0)**
 
 One Gradle module, `:app`. Checked-in release configuration sets application id
 `dev.rafa.kubemobile`, `minSdk 26`, `targetSdk`/`compileSdk 37`, and `versionName 0.1.0`.

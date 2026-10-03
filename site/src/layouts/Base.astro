@@ -11,7 +11,7 @@ const {
   description = "A thoughtful Android client for your Kubernetes clusters. Browse resources, inspect workloads, read logs, and manage Helm and GitOps from your phone.",
 } = Astro.props
 const canonical = new URL(Astro.url.pathname, Astro.site)
-const pageUrl = new URL("/kubedeck/", Astro.site)
+const pageUrl = new URL("/", Astro.site)
 ---
 
 <!doctype html>
@@ -23,7 +23,7 @@ const pageUrl = new URL("/kubedeck/", Astro.site)
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
-    <link rel="icon" href={new URL("/kubedeck/favicon.svg", Astro.site)} type="image/svg+xml" />
+    <link rel="icon" href={new URL("/favicon.svg", Astro.site)} type="image/svg+xml" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
