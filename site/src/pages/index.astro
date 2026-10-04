@@ -15,119 +15,121 @@ const features = [
 ---
 
 <Base>
-  <a class="skip-link" href="#main">Skip to content</a>
-  <div class="wrap">
-    <header class="site-nav">
-      <a class="brand" href="#top" aria-label="KubeDeck home">
-        <svg class="brand-mark" viewBox="0 0 108 108" role="img" aria-label="KubeDeck mark">
-          <path fill="#326ce5" fill-rule="evenodd" d="M54 28 76.5 41v26L54 80 31.5 67V41L54 28Zm0 15.5a10.5 10.5 0 1 0 0 21 10.5 10.5 0 0 0 0-21Z" />
-        </svg>
+  <a class="skip-link fixed left-3 top-3 z-50 -translate-y-[160%] bg-paper px-4 py-3 text-sm text-ink focus:translate-y-0" href="#main">Skip to content</a>
+  <div class="mx-auto w-[calc(100%-2rem)] max-w-[1140px] sm:w-[calc(100%-3.5rem)]">
+    <header class="site-nav relative flex min-h-[76px] items-center justify-between border-b border-line">
+      <a class="inline-flex items-center gap-3 text-[15px] font-semibold tracking-[-.04em] text-paper no-underline" href="#top" aria-label="KubeDeck home">
+        <svg class="h-7 w-7" viewBox="0 0 108 108" aria-hidden="true"><path fill="#6fbf95" fill-rule="evenodd" d="M54 28 76.5 41v26L54 80 31.5 67V41L54 28Zm0 15.5a10.5 10.5 0 1 0 0 21 10.5 10.5 0 0 0 0-21Z" /></svg>
         <span>KubeDeck</span>
       </a>
-      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-nav">Menu</button>
-      <nav class="nav-links" id="primary-nav" aria-label="Main navigation" data-open="false">
-        <a href="#features">Features</a>
-        <a href="#security">Security</a>
-        <a href={repository} target="_blank" rel="noreferrer">GitHub <span aria-hidden="true">↗</span></a>
-        <a class="nav-download" href="#download">Download</a>
+      <button class="menu-toggle inline-flex cursor-pointer border border-line bg-transparent px-3 py-2.5 text-[12px] font-medium text-paper md:hidden" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="Toggle navigation menu">Menu</button>
+      <nav class="nav-links absolute left-0 right-0 top-[60px] z-20 hidden border border-line bg-ink-2 p-2 text-[13px] text-dim md:static md:flex md:items-center md:gap-8 md:border-0 md:bg-transparent md:p-0" id="primary-nav" aria-label="Main navigation" data-open="false">
+        <a class="px-3 py-3 no-underline transition-colors hover:text-paper md:px-0 md:py-2" href="#features">Features</a>
+        <a class="px-3 py-3 no-underline transition-colors hover:text-paper md:px-0 md:py-2" href="#security">Security</a>
+        <a class="px-3 py-3 no-underline transition-colors hover:text-paper md:px-0 md:py-2" href={repository} target="_blank" rel="noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+        <a class="border border-line px-3 py-3 text-paper no-underline transition-colors hover:border-signal hover:text-signal md:px-4 md:py-2.5" href="#download">Download</a>
       </nav>
     </header>
 
     <main id="main">
-      <section class="hero" id="top" aria-labelledby="hero-title">
-        <div class="hero-copy">
-          <span class="eyebrow">A Kubernetes client for Android</span>
-          <h1 id="hero-title">Kubernetes, <span>in your pocket.</span></h1>
-          <p class="hero-lede">Your Kubernetes clusters, in your pocket. A considered Android client for the resources, workloads, and tools you reach for every day.</p>
-          <div class="hero-actions">
-            <a class="button button-primary" href={apk}>
+      <section class="grid items-center gap-10 py-16 sm:py-20 md:min-h-[590px] md:grid-cols-[1.05fr_.95fr] md:gap-12 md:py-20 lg:gap-20" id="top" aria-labelledby="hero-title">
+        <div class="max-w-[570px]">
+          <span class="eyebrow inline-flex items-center gap-2.5 font-mono text-[10px] uppercase tracking-[.12em] text-signal">Kubernetes · Android</span>
+          <h1 class="mt-6 max-w-[10ch] text-[clamp(3.5rem,9vw,6rem)] font-medium leading-[.94] tracking-[-.085em] text-paper" id="hero-title">Your cluster, <span class="text-signal">where you are.</span></h1>
+          <p class="mt-6 max-w-[43ch] text-[16px] leading-[1.8] text-dim sm:text-[18px]">A thoughtful Android client for inspecting resources, following workloads, and handling everyday Kubernetes operations from your phone.</p>
+          <div class="mt-8 flex flex-wrap gap-3">
+            <a class="inline-flex min-h-12 items-center gap-2.5 border border-signal bg-signal px-5 text-[13px] font-semibold text-ink no-underline transition-colors hover:border-paper hover:bg-paper" href={apk}>
               <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 17v3h14v-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
               Download APK
             </a>
-            <a class="button button-secondary" href={repository} target="_blank" rel="noreferrer">View source <span aria-hidden="true">↗</span></a>
+            <a class="inline-flex min-h-12 items-center gap-2 border border-line px-5 text-[13px] font-medium text-paper no-underline transition-colors hover:border-dim" href={repository} target="_blank" rel="noreferrer">View source <span aria-hidden="true">↗</span></a>
           </div>
-          <div class="download-meta" aria-label="Release details">
-            <span><strong>v0.1.0</strong> · first release</span>
+          <div class="mt-5 flex flex-wrap gap-x-4 gap-y-2 font-mono text-[10px] uppercase tracking-[.08em] text-dim" aria-label="Release details">
+            <span><strong class="font-medium text-paper">v0.1.0</strong> · first release</span>
             <span>2.2 MB APK</span>
+            <span>Android 8+</span>
           </div>
         </div>
 
-        <div class="phone-stage" role="img" aria-label="Illustrative KubeDeck cluster overview displayed on a phone">
-          <div class="phone" aria-hidden="true">
-            <div class="phone-status"><span>9:41</span><span>● ● ●</span></div>
-            <div class="phone-top"><h2 class="phone-title">Clusters</h2><span class="phone-avatar">RK</span></div>
-            <div class="phone-cluster">
-              <div class="phone-cluster-label"><span class="phone-dot"></span> Connected cluster</div>
-              <strong>production-east</strong>
-              <small>v1.31.2 · 3 nodes</small>
+        <div class="phone-stage relative grid min-h-[450px] place-items-center border border-line bg-ink-2" role="img" aria-label="Illustrative KubeDeck interface showing cluster and workload inspection features">
+          <span class="absolute left-4 top-4 font-mono text-[9px] uppercase tracking-[.1em] text-faint">Product study / 01</span>
+          <div class="phone relative mt-3 w-[min(244px,74vw)] border border-[#434943] bg-[#0a0b0a] p-3.5 text-paper shadow-[0_24px_64px_#0008]" aria-hidden="true">
+            <div class="flex justify-between px-1 pt-1 font-mono text-[9px] text-dim"><span>9:41</span><span>● ● ●</span></div>
+            <div class="flex items-center justify-between py-4"><h2 class="m-0 text-[19px] font-medium tracking-[-.05em]">Overview</h2><span class="grid h-7 w-7 place-items-center border border-line font-mono text-[9px] text-signal">KD</span></div>
+            <div class="border border-line bg-ink-2 p-3">
+              <div class="flex items-center gap-2 font-mono text-[9px] text-dim"><span class="h-1.5 w-1.5 bg-signal"></span> Cluster profile</div>
+              <strong class="mt-2 block text-[12px] font-medium">Connected cluster</strong>
+              <small class="mt-1 block text-[9px] text-dim">Kubernetes API · TLS</small>
             </div>
-            <div class="phone-section">Cluster overview <small>REFRESH ↻</small></div>
-            <div class="phone-stat-grid">
-              <div class="phone-stat"><strong>3 / 3</strong><span>Nodes ready</span></div>
-              <div class="phone-stat"><strong>12 / 14</strong><span>Pods running</span></div>
-              <div class="phone-stat"><strong>8</strong><span>Namespaces</span></div>
-              <div class="phone-stat"><strong>6 / 6</strong><span>Deployments</span></div>
+            <div class="mt-4 flex justify-between font-mono text-[9px] uppercase tracking-[.08em]"><span>At a glance</span><span class="text-signal">Live API</span></div>
+            <div class="mt-2 grid grid-cols-2 gap-px border border-line bg-line">
+              <div class="min-h-[57px] bg-ink p-2"><strong class="text-[11px] font-medium">Nodes</strong><span class="mt-1 block text-[8px] text-dim">Readiness &amp; capacity</span></div>
+              <div class="min-h-[57px] bg-ink p-2"><strong class="text-[11px] font-medium">Workloads</strong><span class="mt-1 block text-[8px] text-dim">Conditions &amp; events</span></div>
+              <div class="min-h-[57px] bg-ink p-2"><strong class="text-[11px] font-medium">Resources</strong><span class="mt-1 block text-[8px] text-dim">Discovered APIs</span></div>
+              <div class="min-h-[57px] bg-ink p-2"><strong class="text-[11px] font-medium">Metrics</strong><span class="mt-1 block text-[8px] text-dim">When available</span></div>
             </div>
-            <div class="phone-section">Recently opened <small>VIEW ALL</small></div>
-            <div class="phone-resource"><span class="resource-icon">D</span><div><strong>api-gateway</strong><span>Deployment · default</span></div><span class="phone-health">HEALTHY</span></div>
-            <div class="phone-resource"><span class="resource-icon">P</span><div><strong>worker-7bc8f</strong><span>Pod · jobs</span></div><span class="phone-health">RUNNING</span></div>
-            <div class="phone-resource"><span class="resource-icon">S</span><div><strong>primary-db</strong><span>StatefulSet · data</span></div><span class="phone-health">HEALTHY</span></div>
-            <div class="phone-nav"><b>Clusters</b><span>Browse</span><span>Events</span><span>Settings</span></div>
+            <div class="mt-4 flex justify-between font-mono text-[9px] uppercase tracking-[.08em]"><span>Ways to inspect</span><span class="text-faint">Cluster tools</span></div>
+            <div class="mt-2 divide-y divide-line border-t border-line text-[9px]">
+              <div class="flex items-center gap-2.5 py-2"><span class="grid h-5 w-5 place-items-center border border-line font-mono text-[8px] text-signal">Y</span><div><strong class="block font-medium">Resource detail</strong><span class="text-dim">Summary · YAML · events</span></div></div>
+              <div class="flex items-center gap-2.5 py-2"><span class="grid h-5 w-5 place-items-center border border-line font-mono text-[8px] text-signal">L</span><div><strong class="block font-medium">Pod logs &amp; exec</strong><span class="text-dim">Follow logs · open a session</span></div></div>
+              <div class="flex items-center gap-2.5 py-2"><span class="grid h-5 w-5 place-items-center border border-line font-mono text-[8px] text-signal">G</span><div><strong class="block font-medium">GitOps</strong><span class="text-dim">Helm · Flux · Argo CD</span></div></div>
+            </div>
+            <div class="mt-1 flex justify-around border-t border-line pt-2 font-mono text-[8px] text-dim"><b class="font-medium text-signal">Clusters</b><span>Browse</span><span>Events</span><span>Settings</span></div>
           </div>
-          <span class="phone-caption">Illustrative interface · not a live cluster</span>
+          <span class="absolute bottom-3 right-3 font-mono text-[9px] text-dim">Illustrative interface · not a live cluster</span>
         </div>
       </section>
 
-      <section class="section" id="features" aria-labelledby="features-title">
-        <div class="section-heading">
+      <section class="border-t border-line py-16 sm:py-20 md:py-24" id="features" aria-labelledby="features-title">
+        <div class="mb-8 grid gap-5 md:mb-10 md:grid-cols-[.9fr_1.1fr] md:items-end md:gap-10">
           <div>
-            <span class="eyebrow">A focused toolkit</span>
-            <h2 id="features-title">The cluster, closer at hand.</h2>
+            <span class="eyebrow inline-flex font-mono text-[10px] uppercase tracking-[.12em] text-signal">A focused toolkit</span>
+            <h2 class="mt-4 max-w-[12ch] text-[clamp(2.25rem,5vw,3.5rem)] font-medium leading-[1.02] tracking-[-.07em] text-paper" id="features-title">The cluster, closer at hand.</h2>
           </div>
-          <p>Made for inspection and everyday operations on the move. KubeDeck talks to the Kubernetes API directly, with actions governed by the access your account already has.</p>
+          <p class="max-w-[49ch] text-[14px] leading-[1.8] text-dim">Made for inspection and everyday operations on the move. KubeDeck talks to the Kubernetes API directly, with actions governed by your existing cluster access.</p>
         </div>
-        <div class="feature-grid">
+        <div class="grid grid-cols-1 border-l border-t border-line sm:grid-cols-2 lg:grid-cols-3">
           {features.map((feature, index) => (
-            <article class="feature-card">
-              <span class="feature-number">0{index + 1}</span>
-              <h3>{feature.title}</h3>
-              <p>{feature.description}</p>
+            <article class="min-h-[190px] border-b border-r border-line bg-ink px-5 py-5 sm:px-6 sm:py-6">
+              <span class="font-mono text-[10px] tracking-[.08em] text-signal">0{index + 1}</span>
+              <h3 class="mt-5 text-[16px] font-medium tracking-[-.025em] text-paper">{feature.title}</h3>
+              <p class="mt-2.5 max-w-[36ch] text-[13px] leading-[1.75] text-dim">{feature.description}</p>
             </article>
           ))}
         </div>
       </section>
 
-      <section class="security-band" id="security" aria-labelledby="security-title">
+      <section class="grid gap-7 border-y border-line bg-ink-2 px-5 py-10 sm:px-7 md:grid-cols-[.85fr_1.15fr] md:gap-10 md:px-12 md:py-14" id="security" aria-labelledby="security-title">
         <div>
-          <span class="eyebrow">Security &amp; compatibility</span>
-          <h2 id="security-title">Your credentials stay on your device.</h2>
+          <span class="eyebrow inline-flex font-mono text-[10px] uppercase tracking-[.12em] text-signal">Security &amp; compatibility</span>
+          <h2 class="mt-4 max-w-[10ch] text-[clamp(2.25rem,4vw,3.1rem)] font-medium leading-[1.04] tracking-[-.07em] text-paper" id="security-title">Your credentials stay on your device.</h2>
         </div>
-        <div class="security-copy">
+        <div class="text-[13px] leading-[1.85] text-dim">
           <p>Saved cluster profiles are encrypted with AES-256-GCM using an Android Keystore key and stored locally. Network requests go to the Kubernetes API server using your configured credentials and cluster TLS settings.</p>
-          <p>This is an early release distributed as a signed APK for direct installation. It is not published on Google Play. Review the source and your cluster access policies before installing or connecting.</p>
-          <div class="limitations"><strong>Know the edges:</strong> kubeconfig exec plugins and interactive OIDC login/refresh are not supported. Cleartext HTTP API servers are blocked; use HTTPS. Operations remain subject to cluster RBAC.</div>
+          <p class="mt-3">This is an early release distributed as a signed APK for direct installation. It is not published on Google Play. Review the source and your cluster access policies before installing or connecting.</p>
+          <div class="mt-5 border-t border-line pt-3 text-[12px] leading-[1.75]"><strong class="font-medium text-paper">Know the edges:</strong> kubeconfig exec plugins and interactive OIDC login/refresh are not supported. Cleartext HTTP API servers are blocked; use HTTPS. Operations remain subject to cluster RBAC.</div>
         </div>
       </section>
 
-      <section class="download" id="download" aria-labelledby="download-title">
+      <section class="grid gap-6 py-16 sm:py-20 md:grid-cols-[1fr_auto] md:items-center" id="download" aria-labelledby="download-title">
         <div>
-          <span class="eyebrow">Version 0.1.0 · Android 8.0+</span>
-          <h2 id="download-title">Take KubeDeck with you.</h2>
-          <p>Download the APK from the GitHub release, or inspect the source and release notes before installing. APK signed with the Android debug key for local installation.</p>
+          <span class="eyebrow inline-flex font-mono text-[10px] uppercase tracking-[.12em] text-signal">Version 0.1.0 · Android 8.0+</span>
+          <h2 class="mt-4 text-[clamp(2.25rem,4.6vw,3.25rem)] font-medium tracking-[-.07em] text-paper" id="download-title">Take KubeDeck with you.</h2>
+          <p class="mt-2 max-w-[56ch] text-[13px] leading-[1.8] text-dim">Download the APK from the GitHub release, or inspect the source and release notes before installing. APK signed with the Android debug key for local installation.</p>
         </div>
-        <a class="button button-primary" href={apk}>Download APK <span aria-hidden="true">↓</span></a>
+        <a class="inline-flex min-h-12 items-center justify-center gap-2 border border-signal bg-signal px-5 text-[13px] font-semibold text-ink no-underline transition-colors hover:border-paper hover:bg-paper" href={apk}>Download APK <span aria-hidden="true">↓</span></a>
       </section>
     </main>
 
-    <footer class="site-footer">
-      <a class="brand" href="#top">
-        <svg class="brand-mark" viewBox="0 0 108 108" aria-hidden="true"><path fill="#326ce5" fill-rule="evenodd" d="M54 28 76.5 41v26L54 80 31.5 67V41L54 28Zm0 15.5a10.5 10.5 0 1 0 0 21 10.5 10.5 0 0 0 0-21Z" /></svg>
+    <footer class="flex flex-col items-start gap-4 border-t border-line py-6 text-[12px] text-dim sm:flex-row sm:items-center sm:justify-between">
+      <a class="inline-flex items-center gap-2.5 text-[14px] font-semibold tracking-[-.04em] text-paper no-underline" href="#top">
+        <svg class="h-6 w-6" viewBox="0 0 108 108" aria-hidden="true"><path fill="#6fbf95" fill-rule="evenodd" d="M54 28 76.5 41v26L54 80 31.5 67V41L54 28Zm0 15.5a10.5 10.5 0 1 0 0 21 10.5 10.5 0 0 0 0-21Z" /></svg>
         <span>KubeDeck</span>
       </a>
-      <div class="footer-links">
-        <a href={release}>Release notes</a>
-        <a href={`${repository}/blob/main/docs/FEATURES.md`}>Feature reference</a>
-        <a href={repository} target="_blank" rel="noreferrer">Open source ↗</a>
+      <div class="flex flex-wrap gap-x-5 gap-y-2">
+        <a class="no-underline hover:text-paper" href={release}>Release notes</a>
+        <a class="no-underline hover:text-paper" href={`${repository}/blob/main/docs/FEATURES.md`}>Feature reference</a>
+        <a class="no-underline hover:text-paper" href={repository} target="_blank" rel="noreferrer">Open source ↗</a>
       </div>
       <span>Made by Rinci Labs</span>
     </footer>
@@ -136,14 +138,23 @@ const features = [
   <script>
     const toggle = document.querySelector<HTMLButtonElement>(".menu-toggle")
     const nav = document.querySelector<HTMLElement>("#primary-nav")
+    const closeMenu = () => {
+      toggle?.setAttribute("aria-expanded", "false")
+      nav?.setAttribute("data-open", "false")
+    }
+
     toggle?.addEventListener("click", () => {
       const expanded = toggle.getAttribute("aria-expanded") === "true"
       toggle.setAttribute("aria-expanded", String(!expanded))
       nav?.setAttribute("data-open", String(!expanded))
     })
-    nav?.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => {
-      nav.setAttribute("data-open", "false")
-      toggle?.setAttribute("aria-expanded", "false")
-    }))
+
+    nav?.querySelectorAll("a").forEach((link) => link.addEventListener("click", closeMenu))
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && toggle?.getAttribute("aria-expanded") === "true") {
+        closeMenu()
+        toggle.focus()
+      }
+    })
   </script>
 </Base>
