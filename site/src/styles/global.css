@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@source "../../node_modules/@almach/ui/dist/**/*.js";
 
 @font-face {
   font-family: "Geist";
@@ -32,6 +33,15 @@
   --color-faint: #62675f;
   --color-line: #1e211e;
   --color-signal: #6fbf95;
+  --color-background: var(--color-ink);
+  --color-primary: var(--color-signal);
+  --color-primary-foreground: var(--color-ink);
+  --color-input: var(--color-line);
+  --color-border: var(--color-line);
+  --color-ring: var(--color-signal);
+  --color-ring-offset: var(--color-ink);
+  --color-accent: var(--color-line);
+  --color-accent-foreground: var(--color-paper);
 }
 
 @layer base {

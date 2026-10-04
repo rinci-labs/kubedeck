@@ -1,4 +1,5 @@
 ---
+import { Button } from "@almach/ui/button"
 import Base from "../layouts/Base.astro"
 
 const repository = "https://github.com/rinci-labs/kubedeck"
@@ -15,7 +16,7 @@ const features = [
 ---
 
 <Base>
-  <a class="skip-link fixed left-3 top-3 z-50 -translate-y-[160%] bg-paper px-4 py-3 text-sm text-ink focus:translate-y-0" href="#main">Skip to content</a>
+  <a class="fixed left-3 top-3 z-50 -translate-y-[160%] bg-paper px-4 py-3 text-sm text-ink focus:translate-y-0" href="#main">Skip to content</a>
   <div class="mx-auto w-[calc(100%-2rem)] max-w-[1140px] sm:w-[calc(100%-3.5rem)]">
     <header class="site-nav relative flex min-h-[76px] items-center justify-between border-b border-line">
       <a class="inline-flex items-center gap-3 text-[15px] font-semibold tracking-[-.04em] text-paper no-underline" href="#top" aria-label="KubeDeck home">
@@ -38,11 +39,11 @@ const features = [
           <h1 class="mt-6 max-w-[10ch] text-[clamp(3.5rem,9vw,6rem)] font-medium leading-[.94] tracking-[-.085em] text-paper" id="hero-title">Your cluster, <span class="text-signal">where you are.</span></h1>
           <p class="mt-6 max-w-[43ch] text-[16px] leading-[1.8] text-dim sm:text-[18px]">A thoughtful Android client for inspecting resources, following workloads, and handling everyday Kubernetes operations from your phone.</p>
           <div class="mt-8 flex flex-wrap gap-3">
-            <a class="inline-flex min-h-12 items-center gap-2.5 border border-signal bg-signal px-5 text-[13px] font-semibold text-ink no-underline transition-colors hover:border-paper hover:bg-paper" href={apk}>
+            <Button href={apk} variant="default" size="lg" className="!h-12 !rounded-none !border !border-signal !bg-signal !px-5 !text-[13px] !font-semibold !text-ink !shadow-none hover:!border-paper hover:!bg-paper">
               <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 17v3h14v-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
               Download APK
-            </a>
-            <a class="inline-flex min-h-12 items-center gap-2 border border-line px-5 text-[13px] font-medium text-paper no-underline transition-colors hover:border-dim" href={repository} target="_blank" rel="noreferrer">View source <span aria-hidden="true">↗</span></a>
+            </Button>
+            <Button href={repository} variant="outline" size="lg" className="!h-12 !rounded-none !border-line !bg-transparent !px-5 !text-[13px] !font-medium !text-paper !shadow-none hover:!border-dim" target="_blank" rel="noreferrer">View source <span aria-hidden="true">↗</span></Button>
           </div>
           <div class="mt-5 flex flex-wrap gap-x-4 gap-y-2 font-mono text-[10px] uppercase tracking-[.08em] text-dim" aria-label="Release details">
             <span><strong class="font-medium text-paper">v0.1.0</strong> · first release</span>
