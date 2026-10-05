@@ -1,5 +1,14 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
+// Release CI passes -PappVersion=X.Y.Z from the pushed vX.Y.Z tag; local builds use the default.
+val appVersion = (findProperty("appVersion") as String?) ?: "0.1.0"
+val appVersionCode = appVersion.split(".").let { parts ->
+    require(parts.size == 3 && parts.all { it.toIntOrNull() != null }) { "appVersion must be X.Y.Z, got $appVersion" }
+    // 0.1.0 shipped as versionCode 1; X*10000 + Y*100 + Z keeps every later tag above it.
+    maxOf(1, parts[0].toInt() * 10000 + parts[1].toInt() * 100 + parts[2].toInt())
+}
+val releaseKeystore = System.getenv("KUBEDECK_KEYSTORE_FILE")?.let(::file)?.takeIf { it.isFile }
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
@@ -14,9 +23,20 @@ android {
         applicationId = "dev.rafa.kubemobile"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = appVersionCode
+        versionName = appVersion
         resourceConfigurations += listOf("en")
+    }
+
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = releaseKeystore
+                storePassword = System.getenv("KUBEDECK_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KUBEDECK_KEY_ALIAS")
+                keyPassword = System.getenv("KUBEDECK_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
@@ -26,9 +46,10 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            // Signed with the debug key so the artifact stays installable without
-            // a user-provided keystore. Replace for distribution.
-            signingConfig = signingConfigs.getByName("debug")
+            // Published releases are signed with the keystore from KUBEDECK_KEYSTORE_*
+            // (the key v0.1.0 shipped with), so installs and in-app updates keep the
+            // same certificate. Without it, local builds fall back to the debug key.
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",

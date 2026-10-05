@@ -14,7 +14,7 @@
 | targetSdk | 37 | `app/build.gradle.kts` |
 | minSdk | 26 | `app/build.gradle.kts` |
 | Java source/target | 17 | `app/build.gradle.kts` (`compileOptions` and `kotlin.compilerOptions.jvmTarget`) |
-| app version | `versionCode 1`, `versionName "0.1.0"` | `app/build.gradle.kts` |
+| app version | `versionName` from `-PappVersion=X.Y.Z` (default `0.1.0`), `versionCode` = X·10000 + Y·100 + Z (min 1) | `app/build.gradle.kts`; release CI sets it from the `vX.Y.Z` tag |
 
 Gradle Java toolchain: the project sets `sourceCompatibility`/`targetCompatibility` to 17 and
 `jvmTarget` to 17, so a JDK 17 or newer must be the one Gradle runs on.

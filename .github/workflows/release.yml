@@ -1,0 +1,129 @@
+# Publishes a signed KubeDeck APK to GitHub Releases when a vX.Y.Z tag is pushed.
+#
+# The in-app updater (UpdateManager.kt) reads releases/latest, takes the first
+# *.apk asset plus SHA256SUMS.txt, and refuses any APK whose signing certificate
+# differs from the installed app. Every release must therefore be signed with the
+# same key as v0.1.0 (SHA-256 b820868c…7f0986). That key is supplied through
+# these repository secrets; the job fails instead of signing with a throwaway key:
+#   KUBEDECK_KEYSTORE_BASE64   base64 of the .keystore/.jks file
+#   KUBEDECK_KEYSTORE_PASSWORD store password
+#   KUBEDECK_KEY_ALIAS         key alias
+#   KUBEDECK_KEY_PASSWORD      key password
+#
+# Cut a release with:  git tag v0.2.0 && git push origin v0.2.0
+
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and publish signed APK
+    # Same Blacksmith runner as android.yml; use ubuntu-latest without the Blacksmith App.
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Read version from tag
+        id: version
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Tag $tag is not vX.Y.Z"
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Restore signing keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KUBEDECK_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::KUBEDECK_KEYSTORE_BASE64 is not set; refusing to publish an APK with a different signing key."
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/kubedeck.keystore"
+          echo "KUBEDECK_KEYSTORE_FILE=$RUNNER_TEMP/kubedeck.keystore" >> "$GITHUB_ENV"
+
+      - name: Mount Gradle user home on a Blacksmith sticky disk
+        uses: useblacksmith/stickydisk@v1
+        with:
+          key: ${{ github.repository }}-gradle-home
+          path: ~/.gradle
+
+      - name: Set up JDK 21 (Temurin)
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install Android platform and build-tools
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-37" "build-tools;37.0.0" \
+            || echo "::warning::Explicit SDK install failed; AGP will attempt to auto-download on demand."
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Build release APK
+        env:
+          KUBEDECK_KEYSTORE_PASSWORD: ${{ secrets.KUBEDECK_KEYSTORE_PASSWORD }}
+          KUBEDECK_KEY_ALIAS: ${{ secrets.KUBEDECK_KEY_ALIAS }}
+          KUBEDECK_KEY_PASSWORD: ${{ secrets.KUBEDECK_KEY_PASSWORD }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon --stacktrace \
+            -PappVersion=${{ steps.version.outputs.version }} :app:assembleRelease
+
+      - name: Verify signature and stage assets
+        id: assets
+        run: |
+          apksigner="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner"
+          src=app/build/outputs/apk/release/app-release.apk
+          name="KubeDeck-${{ steps.version.outputs.tag }}.apk"
+          mkdir -p dist
+          cp "$src" "dist/$name"
+          cert="$("$apksigner" verify --print-certs "dist/$name" | grep -m1 'certificate SHA-256 digest' | awk '{print $NF}')"
+          echo "Signing certificate SHA-256: $cert"
+          if [ "$cert" != "b820868cb2c9767bc0d286ebe33c9e7cee83706e802512dc66cf3f591e7f0986" ]; then
+            echo "::error::APK is signed with $cert, not the KubeDeck release key. Installed apps could not update to it."
+            exit 1
+          fi
+          (cd dist && sha256sum "$name" > SHA256SUMS.txt)
+          cat dist/SHA256SUMS.txt
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ steps.version.outputs.tag }}"
+          if gh release view "$tag" > /dev/null 2>&1; then
+            gh release upload "$tag" dist/* --clobber
+          else
+            gh release create "$tag" dist/* \
+              --title "KubeDeck ${{ steps.version.outputs.version }}" \
+              --generate-notes \
+              --latest
+          fi
+
+      - name: Remove keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/kubedeck.keystore"
