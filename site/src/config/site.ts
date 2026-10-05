@@ -1,5 +1,25 @@
-export const version = "0.1.0"
 export const repository = "https://github.com/rinci-labs/kubedeck"
+
+// Resolved at build time so download links follow the newest GitHub Release
+// (published by .github/workflows/release.yml). Falls back to the first release offline.
+const fallbackVersion = "0.1.0"
+
+async function latestReleaseVersion(): Promise<string> {
+  try {
+    const response = await fetch("https://api.github.com/repos/rinci-labs/kubedeck/releases/latest", {
+      headers: { Accept: "application/vnd.github+json" },
+      signal: AbortSignal.timeout(10_000),
+    })
+    if (!response.ok) return fallbackVersion
+    const { tag_name: tag } = (await response.json()) as { tag_name?: string }
+    return tag && /^v\d+\.\d+\.\d+$/.test(tag) ? tag.slice(1) : fallbackVersion
+  } catch {
+    return fallbackVersion
+  }
+}
+
+export const version = await latestReleaseVersion()
+export const isFirstRelease = version === fallbackVersion
 export const releaseUrl = `${repository}/releases/tag/v${version}`
 export const apkUrl = `${repository}/releases/download/v${version}/KubeDeck-v${version}.apk`
 export const featuresDocUrl = `${repository}/blob/main/docs/FEATURES.md`
