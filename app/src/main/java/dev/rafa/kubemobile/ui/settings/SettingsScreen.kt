@@ -1,11 +1,35 @@
 package dev.rafa.kubemobile.ui.settings
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+import dev.rafa.kubemobile.BuildConfig
+import dev.rafa.kubemobile.ui.components.SecondaryText
+import dev.rafa.kubemobile.update.GithubRelease
+import dev.rafa.kubemobile.update.InstallResult
+import dev.rafa.kubemobile.update.ReleaseAsset
+import dev.rafa.kubemobile.update.UpdateResult
+import kotlinx.coroutines.launch
+import java.io.File
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -54,6 +78,26 @@ import dev.rafa.kubemobile.ui.components.LoadingState
 import dev.rafa.kubemobile.ui.components.SectionCard
 import dev.rafa.kubemobile.ui.navigateToTop
 
+private sealed interface UpdateState {
+    data object Idle : UpdateState
+    data object Checking : UpdateState
+    data object UpToDate : UpdateState
+    data class Available(
+        val release: GithubRelease,
+        val apkAsset: ReleaseAsset,
+        val sumsAsset: ReleaseAsset?,
+    ) : UpdateState
+    data class Downloading(val progress: Float) : UpdateState
+    data class ReadyToInstall(val file: File) : UpdateState
+    data class Error(val message: String) : UpdateState
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(app: AppViewModel, navController: NavController) {
@@ -61,6 +105,45 @@ fun SettingsScreen(app: AppViewModel, navController: NavController) {
     val profiles by app.profiles.collectAsStateWithLifecycle()
     val namespaces by app.namespaces.collectAsStateWithLifecycle()
     var forgetOpen by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var updateState: UpdateState by remember { mutableStateOf(UpdateState.Idle) }
+    var currentAvailable by remember { mutableStateOf<UpdateResult.Available?>(null) }
+    var showUpdateDialog by remember { mutableStateOf(false) }
+
+    val backgroundRelease by app.updateAvailable.collectAsStateWithLifecycle()
+    LaunchedEffect(backgroundRelease) {
+        val rel = backgroundRelease
+        if (rel != null && updateState is UpdateState.Idle) {
+            val apk = rel.assets.firstOrNull { it.name.endsWith(".apk") }
+            if (apk != null) {
+                val sums = rel.assets.firstOrNull { it.name.equals("SHA256SUMS.txt", ignoreCase = true) }
+                val avail = UpdateResult.Available(rel, apk, sums)
+                currentAvailable = avail
+                updateState = UpdateState.Available(rel, apk, sums)
+            }
+        }
+    }
+
+    val checkUpdates: () -> Unit = {
+        if (updateState !is UpdateState.Checking && updateState !is UpdateState.Downloading) {
+            updateState = UpdateState.Checking
+            scope.launch {
+                when (val result = app.updateManager.checkForUpdate()) {
+                    is UpdateResult.UpToDate -> updateState = UpdateState.UpToDate
+                    is UpdateResult.Available -> {
+                        currentAvailable = result
+                        updateState = UpdateState.Available(result.release, result.apkAsset, result.sumsAsset)
+                        showUpdateDialog = true
+                        app.setUpdateAvailable(result.release)
+                    }
+                    is UpdateResult.NetworkError -> updateState = UpdateState.Error(result.msg)
+                    is UpdateResult.ParseError -> updateState = UpdateState.Error(result.msg)
+                }
+            }
+        }
+    }
 
     val profile: ClusterProfile? = (sessionState as? SessionState.Ready)?.session?.profile
         ?: profiles.firstOrNull()
@@ -94,7 +177,10 @@ fun SettingsScreen(app: AppViewModel, navController: NavController) {
 
                 else -> LazyColumn(contentPadding = PaddingValues(bottom = ListBottomPadding)) {
                     item {
-                        SectionCard(title = stringResource(R.string.label_cluster_info)) {
+                        SectionCard(
+                            title = stringResource(R.string.label_cluster_info),
+                            modifier = Modifier.padding(vertical = Spacing.RowVertical),
+                        ) {
                             KeyValueRow(stringResource(R.string.label_name), profile.name, copyable = true)
                             KeyValueRow(stringResource(R.string.label_server), profile.baseUrl, copyable = true)
                             KeyValueRow(stringResource(R.string.label_namespace), profile.displayNamespace)
@@ -130,6 +216,7 @@ fun SettingsScreen(app: AppViewModel, navController: NavController) {
 
                     item {
                         ListItem(
+                            modifier = Modifier.padding(vertical = Spacing.RowVertical),
                             headlineContent = { Text(stringResource(R.string.label_insecure_tls)) },
                             supportingContent = {
                                 dev.rafa.kubemobile.ui.components.SecondaryText(
@@ -163,7 +250,10 @@ fun SettingsScreen(app: AppViewModel, navController: NavController) {
                     }
 
                     item {
-                        SectionCard(title = stringResource(R.string.settings_diagnostics)) {
+                        SectionCard(
+                            title = stringResource(R.string.settings_diagnostics),
+                            modifier = Modifier.padding(vertical = Spacing.RowVertical),
+                        ) {
                             KeyValueRow(
                                 stringResource(R.string.label_catalog),
                                 stringResource(
@@ -181,7 +271,7 @@ fun SettingsScreen(app: AppViewModel, navController: NavController) {
 
                     item {
                         Column(Modifier.padding(horizontal = Spacing.RowPadding, vertical = Spacing.ItemGap)) {
-                            FilledTonalButton(
+                            FilledTonalButton(shape = RectangleShape, 
                                 onClick = { app.reloadDiscovery() },
                                 enabled = session != null,
                                 modifier = Modifier.fillMaxWidth(),
@@ -191,7 +281,7 @@ fun SettingsScreen(app: AppViewModel, navController: NavController) {
                                 Text(stringResource(R.string.action_reload_discovery))
                             }
                             Spacer(Modifier.size(8.dp))
-                            OutlinedButton(
+                            OutlinedButton(shape = RectangleShape, 
                                 onClick = { forgetOpen = true },
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
@@ -204,7 +294,10 @@ fun SettingsScreen(app: AppViewModel, navController: NavController) {
                     }
 
                     item {
-                        SectionCard(title = stringResource(R.string.label_about)) {
+                        SectionCard(
+                            title = stringResource(R.string.label_about),
+                            modifier = Modifier.padding(vertical = Spacing.RowVertical),
+                        ) {
                             Row(Modifier.padding(horizontal = Spacing.CardPadding, vertical = Spacing.ItemGap)) {
                                 Icon(
                                     imageVector = Icons.Filled.Lock,
@@ -218,6 +311,63 @@ fun SettingsScreen(app: AppViewModel, navController: NavController) {
                                     style = MaterialTheme.typography.bodySmall,
                                 )
                             }
+                        }
+                    }
+
+                    item {
+                        SectionCard(
+                            title = "Updates",
+                            modifier = Modifier.padding(vertical = Spacing.RowVertical),
+                        ) {
+                            KeyValueRow("Version", BuildConfig.VERSION_NAME)
+                            ListItem(
+                                modifier = Modifier.clickable(
+                                    enabled = updateState !is UpdateState.Checking && updateState !is UpdateState.Downloading,
+                                ) {
+                                    when (updateState) {
+                                        is UpdateState.Available, is UpdateState.ReadyToInstall -> showUpdateDialog = true
+                                        else -> checkUpdates()
+                                    }
+                                },
+                                headlineContent = { Text("Check for updates") },
+                                supportingContent = {
+                                    when (val s = updateState) {
+                                        is UpdateState.Idle -> SecondaryText("Tap to check GitHub Releases")
+                                        is UpdateState.Checking -> SecondaryText("Checking…")
+                                        is UpdateState.UpToDate -> SecondaryText("App is up to date")
+                                        is UpdateState.Available -> SecondaryText("${s.release.tag_name} available")
+                                        is UpdateState.Downloading -> SecondaryText("Downloading ${(s.progress * 100).toInt()}%")
+                                        is UpdateState.ReadyToInstall -> SecondaryText("Ready to install")
+                                        is UpdateState.Error -> Text(
+                                            s.message,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.error,
+                                        )
+                                    }
+                                },
+                                trailingContent = {
+                                    when (updateState) {
+                                        is UpdateState.Checking -> CircularProgressIndicator(
+                                            Modifier.size(24.dp),
+                                            strokeWidth = 2.dp,
+                                        )
+                                        is UpdateState.Downloading -> CircularProgressIndicator(
+                                            progress = { (updateState as UpdateState.Downloading).progress },
+                                            modifier = Modifier.size(24.dp),
+                                            strokeWidth = 2.dp,
+                                        )
+                                        is UpdateState.Available -> FilledTonalButton(onClick = { showUpdateDialog = true }) {
+                                            Text("View")
+                                        }
+                                        is UpdateState.ReadyToInstall -> FilledTonalButton(onClick = { showUpdateDialog = true }) {
+                                            Text("Install")
+                                        }
+                                        else -> OutlinedButton(onClick = checkUpdates) {
+                                            Text("Check")
+                                        }
+                                    }
+                                },
+                            )
                         }
                     }
                 }
@@ -251,6 +401,128 @@ fun SettingsScreen(app: AppViewModel, navController: NavController) {
             },
         )
     }
+
+    if (showUpdateDialog && currentAvailable != null) {
+        val avail = currentAvailable!!
+        val apkAsset = avail.apkAsset
+        val sumsAsset = avail.sumsAsset
+        val release = avail.release
+        AlertDialog(
+            onDismissRequest = {
+                if (updateState !is UpdateState.Downloading) showUpdateDialog = false
+            },
+            title = {
+                Text(release.name?.takeIf { it.isNotBlank() } ?: release.tag_name)
+            },
+            text = {
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                ) {
+                    Text("Version: ${release.tag_name}", style = MaterialTheme.typography.titleSmall)
+                    if (apkAsset.size > 0) {
+                        Text(
+                            "Size: ${"%.1f MB".format(apkAsset.size / (1024f * 1024f))}",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                    if (!release.body.isNullOrBlank()) {
+                        Spacer(Modifier.size(Spacing.ItemGap))
+                        Text("Release Notes:", style = MaterialTheme.typography.labelMedium)
+                        Spacer(Modifier.size(Spacing.TightGap))
+                        Text(release.body, style = MaterialTheme.typography.bodySmall)
+                    }
+                    when (val s = updateState) {
+                        is UpdateState.Downloading -> {
+                            Spacer(Modifier.size(Spacing.ItemGap))
+                            LinearProgressIndicator(
+                                progress = { s.progress },
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            Spacer(Modifier.size(Spacing.TightGap))
+                            Text("Downloading: ${(s.progress * 100).toInt()}%", style = MaterialTheme.typography.bodySmall)
+                        }
+                        is UpdateState.ReadyToInstall -> {
+                            Spacer(Modifier.size(Spacing.ItemGap))
+                            Text(
+                                "Download complete and verified.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                        is UpdateState.Error -> {
+                            Spacer(Modifier.size(Spacing.ItemGap))
+                            Text(s.message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                        }
+                        else -> {}
+                    }
+                }
+            },
+            confirmButton = {
+                when (val s = updateState) {
+                    is UpdateState.ReadyToInstall -> FilledTonalButton(onClick = {
+                        scope.launch {
+                            val activity = context.findActivity()
+                            if (activity != null) {
+                                when (val res = app.updateManager.verifyAndInstall(s.file, sumsAsset, activity)) {
+                                    is InstallResult.Launched -> showUpdateDialog = false
+                                    is InstallResult.NeedsPermission -> {
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                            context.startActivity(
+                                                Intent(
+                                                    Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                                                    Uri.parse("package:${context.packageName}"),
+                                                ),
+                                            )
+                                        }
+                                    }
+                                    is InstallResult.HashMismatch -> updateState = UpdateState.Error("Hash mismatch")
+                                    is InstallResult.PackageMismatch -> updateState = UpdateState.Error("Package name mismatch")
+                                    is InstallResult.CertMismatch -> updateState = UpdateState.Error("Signing certificate mismatch")
+                                    is InstallResult.Error -> updateState = UpdateState.Error(res.msg)
+                                }
+                            } else {
+                                updateState = UpdateState.Error("Activity context unavailable")
+                            }
+                        }
+                    }) { Text("Install") }
+                    is UpdateState.Downloading -> FilledTonalButton(onClick = {}, enabled = false) {
+                        Text("Downloading…")
+                    }
+                    else -> FilledTonalButton(onClick = {
+                        updateState = UpdateState.Downloading(0f)
+                        scope.launch {
+                            val file = app.updateManager.downloadUpdate(apkAsset) { p ->
+                                updateState = UpdateState.Downloading(p)
+                            }
+                            if (file != null) {
+                                val verifyError = app.updateManager.verifyApk(file, sumsAsset)
+                                updateState = if (verifyError == null) {
+                                    UpdateState.ReadyToInstall(file)
+                                } else when (verifyError) {
+                                    is InstallResult.HashMismatch -> UpdateState.Error("Hash mismatch: expected ${verifyError.expected.take(8)}…")
+                                    is InstallResult.PackageMismatch -> UpdateState.Error("Package name mismatch")
+                                    is InstallResult.CertMismatch -> UpdateState.Error("Signing certificate mismatch")
+                                    is InstallResult.Error -> UpdateState.Error(verifyError.msg)
+                                    else -> UpdateState.Error("Verification failed")
+                                }
+                            } else {
+                                updateState = UpdateState.Error("Download failed")
+                            }
+                        }
+                    }) { Text("Download") }
+                }
+            },
+            dismissButton = {
+                if (updateState !is UpdateState.Downloading) {
+                    TextButton(onClick = { showUpdateDialog = false }) {
+                        Text(stringResource(R.string.action_cancel))
+                    }
+                }
+            },
+        )
+    }
 }
 
 @Composable
@@ -260,6 +532,11 @@ private fun WarningCard(text: String) {
             .fillMaxWidth()
             .padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.RowVertical),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.error.copy(alpha = 0.5f),
+        ),
     ) {
         Row(
             Modifier.padding(Spacing.CardPadding),

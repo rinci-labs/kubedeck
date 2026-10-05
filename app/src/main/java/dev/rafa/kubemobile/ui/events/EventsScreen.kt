@@ -1,5 +1,6 @@
 package dev.rafa.kubemobile.ui.events
 
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -65,7 +66,7 @@ import dev.rafa.kubemobile.ui.screenViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EventsScreen(app: AppViewModel, navController: NavController) {
-    val vm = screenViewModel(app) { a, handle -> EventsViewModel(a, handle) }
+    val vm = screenViewModel(app) { a, _ -> EventsViewModel(a) }
     val state by vm.state.collectAsStateWithLifecycle()
     val sessionState by app.sessionState.collectAsStateWithLifecycle()
     val namespaces by app.namespaces.collectAsStateWithLifecycle()
@@ -152,17 +153,17 @@ fun EventsScreen(app: AppViewModel, navController: NavController) {
                             .padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.RowVertical),
                         horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
                     ) {
-                        FilterChip(
+                        FilterChip(shape = RectangleShape, 
                             selected = !state.warningsOnly,
                             onClick = { vm.setWarningsOnly(false) },
                             label = { Text(stringResource(R.string.events_normal)) },
                         )
-                        FilterChip(
+                        FilterChip(shape = RectangleShape, 
                             selected = state.warningsOnly,
                             onClick = { vm.setWarningsOnly(true) },
                             label = { Text(stringResource(R.string.events_warning)) },
                         )
-                        AssistChip(
+                        AssistChip(shape = RectangleShape, 
                             onClick = { vm.setGrouped(!state.grouped) },
                             label = {
                                 Text(

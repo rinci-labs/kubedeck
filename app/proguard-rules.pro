@@ -5,9 +5,11 @@
 -dontwarn org.bouncycastle.**
 -dontwarn org.openjsse.**
 
+# OkHttp hostname verifier accessed reflectively
+-keep class okhttp3.internal.tls.OkHostnameVerifier { *; }
+
 # SnakeYAML reflects over these
 -keep class org.yaml.snakeyaml.** { *; }
--keep class org.yaml.snakeyaml.constructor.** { *; }
 -dontwarn org.yaml.snakeyaml.**
 
 # kotlinx.serialization
@@ -16,3 +18,15 @@
 -keepclassmembers class kotlinx.serialization.json.** { *; }
 -keep,includedescriptorclasses class dev.rafa.kubemobile.**$$serializer { *; }
 -keepclassmembers class dev.rafa.kubemobile.** { *** Companion; }
+-keepclassmembers @kotlinx.serialization.Serializable class dev.rafa.kubemobile.** {
+    static ** Companion;
+}
+-keepclasseswithmembers class dev.rafa.kubemobile.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+
+# Update checker
+-keep class dev.rafa.kubemobile.update.** { *; }
+
+# FileProvider
+-keep class androidx.core.content.FileProvider { *; }

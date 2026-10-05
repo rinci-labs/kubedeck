@@ -78,7 +78,7 @@ fun ClusterSummaryScreen(
     navController: NavController,
     profileId: String,
 ) {
-    val vm = screenViewModel(app) { a, handle -> ClusterSummaryViewModel(a, handle) }
+    val vm = screenViewModel(app) { a, _ -> ClusterSummaryViewModel(a) }
     val state by vm.state.collectAsStateWithLifecycle()
     val sessionState by app.sessionState.collectAsStateWithLifecycle()
     val profile = app.profileById(profileId)
@@ -194,6 +194,11 @@ private fun ClusterHeaderCard(
                 top = Spacing.ContentInset,
             ),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outlineVariant,
+        ),
     ) {
         Column(Modifier.padding(Spacing.CardPadding)) {
             Text(
@@ -276,6 +281,11 @@ private fun StatTileView(tile: StatTile, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outlineVariant,
+        ),
     ) {
         Column(Modifier.padding(Spacing.CardPadding)) {
             Text(
@@ -588,7 +598,12 @@ private fun QuickLinks(
 private fun QuickLink(entry: LinkEntry, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.clickable(onClick = entry.onClick),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outlineVariant,
+        ),
     ) {
         Column(
             Modifier.padding(Spacing.CardPadding),

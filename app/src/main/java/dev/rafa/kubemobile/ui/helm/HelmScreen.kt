@@ -1,5 +1,6 @@
 package dev.rafa.kubemobile.ui.helm
 
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -180,16 +181,16 @@ private fun ScopeStrip(selected: List<String>, onOpen: () -> Unit) {
             .padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.RowVertical),
         horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
     ) {
-        FilterChip(
+        FilterChip(shape = RectangleShape, 
             selected = selected.isEmpty(),
             onClick = onOpen,
             label = { Text(stringResource(R.string.helm_all_namespaces)) },
         )
         selected.take(4).forEach { ns ->
-            FilterChip(selected = true, onClick = onOpen, label = { Text(ns, maxLines = 1) })
+            FilterChip(shape = RectangleShape, selected = true, onClick = onOpen, label = { Text(ns, maxLines = 1) })
         }
         if (selected.size > 4) {
-            AssistChip(onClick = onOpen, label = { Text("+${selected.size - 4}") })
+            AssistChip(shape = RectangleShape, onClick = onOpen, label = { Text("+${selected.size - 4}") })
         }
     }
 }

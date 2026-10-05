@@ -68,7 +68,7 @@ fun PortForwardScreen(
     namespace: String,
     pod: String,
 ) {
-    val vm = screenViewModel(app) { a, handle -> PortForwardViewModel(a, handle) }
+    val vm = screenViewModel(app) { a, _ -> PortForwardViewModel(a) }
     val state by vm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var customOpen by remember { mutableStateOf(false) }

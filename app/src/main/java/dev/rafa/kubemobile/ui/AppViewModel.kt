@@ -1,6 +1,16 @@
 package dev.rafa.kubemobile.ui
 
 import android.app.Application
+import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import dev.rafa.kubemobile.update.GithubRelease
+import dev.rafa.kubemobile.update.UpdateManager
+import dev.rafa.kubemobile.update.UpdateResult
+import kotlinx.coroutines.flow.first
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.rafa.kubemobile.config.ClusterProfile
@@ -21,6 +31,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+private val Context.appDataStore: DataStore<Preferences> by preferencesDataStore(name = "app_preferences")
+private val KEY_LAST_UPDATE_CHECK = longPreferencesKey("last_update_check")
+
 /** Lifecycle of the one live connection the app keeps to the active cluster. */
 sealed interface SessionState {
     data object Idle : SessionState
@@ -38,6 +51,36 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     val store = ClusterStore(application)
     val repository = KubeRepository(application)
+
+    val updateManager = UpdateManager(application)
+
+    private val _updateAvailable = MutableStateFlow<GithubRelease?>(null)
+    val updateAvailable: StateFlow<GithubRelease?> = _updateAvailable.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            checkUpdateIfDue()
+        }
+    }
+
+    private suspend fun checkUpdateIfDue() {
+        val now = System.currentTimeMillis()
+        val prefs = runCatching { getApplication<Application>().appDataStore.data.first() }.getOrNull()
+        val lastCheck = prefs?.get(KEY_LAST_UPDATE_CHECK) ?: 0L
+        if (now - lastCheck >= 24 * 60 * 60 * 1000L) {
+            val result = updateManager.checkForUpdate()
+            runCatching {
+                getApplication<Application>().appDataStore.edit { it[KEY_LAST_UPDATE_CHECK] = now }
+            }
+            if (result is UpdateResult.Available) {
+                _updateAvailable.value = result.release
+            }
+        }
+    }
+
+    fun setUpdateAvailable(release: GithubRelease?) {
+        _updateAvailable.value = release
+    }
 
     val profiles: StateFlow<List<ClusterProfile>> =
         store.profiles.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())

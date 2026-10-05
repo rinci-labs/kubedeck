@@ -1,5 +1,6 @@
 package dev.rafa.kubemobile.ui.browse
 
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -51,6 +52,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -408,7 +410,7 @@ private fun BrowseNamespaceRow(
             ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        AssistChip(
+        AssistChip(shape = RectangleShape, 
             onClick = onOpen,
             label = {
                 Text(
@@ -448,15 +450,17 @@ private fun BrowseFilterRow(
     groupCount: Int,
     onOpenGroups: () -> Unit,
 ) {
-    Row(
-        Modifier
+    FlowRow(
+        modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = Spacing.ScreenPadding),
+            .padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.RowVertical),
         horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = Arrangement.spacedBy(Spacing.TightGap),
+        itemVerticalAlignment = Alignment.CenterVertically,
     ) {
         ScopeFilter.entries.forEach { entry ->
             FilterChip(
+                shape = RectangleShape,
                 selected = scope == entry,
                 onClick = { onScope(entry) },
                 label = {
@@ -473,8 +477,8 @@ private fun BrowseFilterRow(
                 },
             )
         }
-        Spacer(Modifier.weight(1f))
         FilterChip(
+            shape = RectangleShape,
             selected = groupCount > 0,
             onClick = onOpenGroups,
             label = {
@@ -505,7 +509,7 @@ private fun CatalogHeader(text: String) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(
                 start = Spacing.ScreenPadding,
                 end = Spacing.ScreenPadding,
@@ -582,7 +586,7 @@ private fun DashboardGrid(app: AppViewModel, navController: NavController) {
         Text(
             text = stringResource(R.string.label_dashboards),
             style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = Spacing.ItemGap),
         )
         entries.chunked(2).forEach { row ->
@@ -596,7 +600,12 @@ private fun DashboardGrid(app: AppViewModel, navController: NavController) {
                             .weight(1f)
                             .clickable { navController.navigateToTop(entry.route) },
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            MaterialTheme.colorScheme.outlineVariant,
                         ),
                     ) {
                         Column(Modifier.padding(Spacing.CardPadding)) {

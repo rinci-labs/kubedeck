@@ -295,23 +295,38 @@ data class ToneColors(val container: Color, val content: Color)
 @ReadOnlyComposable
 fun toneColors(tone: ResourceHealth.Tone): ToneColors {
     val dark = isSystemInDarkTheme()
-    val scheme = MaterialTheme.colorScheme
     return when (tone) {
+        // Tones stay distinguishable for status, but sit on faint mint/amber/red washes rather
+        // than saturated Material containers, so no card becomes a block of colour.
         ResourceHealth.Tone.OK -> if (dark) {
-            ToneColors(Color(0xFF14401F), Color(0xFF8FE0A3))
+            ToneColors(Color(0x1F6FBF95), Color(0xFF8FD8AF))
         } else {
-            ToneColors(Color(0xFFD3F2DA), Color(0xFF0B5A22))
+            ToneColors(Color(0xFFD8EDE0), Color(0xFF2F6B4F))
         }
 
         ResourceHealth.Tone.WARN -> if (dark) {
-            ToneColors(Color(0xFF453400), Color(0xFFFFD48A))
+            ToneColors(Color(0x1FD9A441), Color(0xFFE5B45C))
         } else {
-            ToneColors(Color(0xFFFFECC7), Color(0xFF6B4A00))
+            ToneColors(Color(0xFFF6E7C7), Color(0xFF7A5200))
         }
 
-        ResourceHealth.Tone.BAD -> ToneColors(scheme.errorContainer, scheme.onErrorContainer)
-        ResourceHealth.Tone.PROGRESS -> ToneColors(scheme.secondaryContainer, scheme.onSecondaryContainer)
-        ResourceHealth.Tone.NEUTRAL -> ToneColors(scheme.surfaceVariant, scheme.onSurfaceVariant)
+        ResourceHealth.Tone.BAD -> if (dark) {
+            ToneColors(Color(0x1FE5695F), Color(0xFFF0948C))
+        } else {
+            ToneColors(Color(0xFFFBE1DE), Color(0xFF9A2A22))
+        }
+
+        ResourceHealth.Tone.PROGRESS -> if (dark) {
+            ToneColors(Color(0xFF15241C), Color(0xFF9FD9B8))
+        } else {
+            ToneColors(Color(0xFFD8EDE0), Color(0xFF2F6B4F))
+        }
+
+        ResourceHealth.Tone.NEUTRAL -> if (dark) {
+            ToneColors(Color(0x141E211E), Color(0xFF9AA09A))
+        } else {
+            ToneColors(Color(0xFFECEEE9), Color(0xFF59625D))
+        }
     }
 }
 

@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  KubeDeck mark: one solid Kubernetes-blue hexagon with a single circular cut-out.
-  Deliberately one mass plus one hole — the previous ring + inner hexagon + dot stack read as
-  cluttered at launcher size. Ink stays inside a 52dp span centred in the 108dp viewport, well
-  inside the 66dp adaptive safe zone, so no mask crops it and the padding stays generous.
+  Compact KubeDeck mark. The saturated brand blue keeps the hex recognizable on the light tile;
+  the 52dp mark sits inside the adaptive icon safe zone with breathing room under every mask.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"

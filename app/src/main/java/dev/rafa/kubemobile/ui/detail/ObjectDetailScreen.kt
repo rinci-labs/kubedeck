@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -124,7 +125,7 @@ fun ObjectDetailScreen(
         return
     }
 
-    val vm = screenViewModel(app) { a, handle -> ObjectDetailViewModel(a, handle) }
+    val vm = screenViewModel(app) { a, _ -> ObjectDetailViewModel(a) }
     val body by vm.objectBody.collectAsStateWithLifecycle()
     val yaml by vm.yaml.collectAsStateWithLifecycle()
     val yamlEditing by vm.yamlEditing.collectAsStateWithLifecycle()
@@ -858,12 +859,12 @@ private fun YamlTab(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (!editing) {
-                OutlinedButton(onClick = onEdit) {
+                OutlinedButton(shape = RectangleShape, onClick = onEdit) {
                     Icon(Icons.Filled.Edit, contentDescription = null, Modifier.size(16.dp))
                     Spacer(Modifier.size(6.dp))
                     Text(stringResource(R.string.detail_edit))
                 }
-                OutlinedButton(onClick = {
+                OutlinedButton(shape = RectangleShape, onClick = {
                     context.copyToClipboard("yaml", yaml)
                 }) {
                     Icon(Icons.Filled.ContentCopy, contentDescription = null, Modifier.size(16.dp))
@@ -879,10 +880,10 @@ private fun YamlTab(
                     )
                 }
             } else {
-                Button(onClick = onApply, enabled = dirty) {
+                Button(shape = RectangleShape, onClick = onApply, enabled = dirty) {
                     Text(stringResource(R.string.action_apply))
                 }
-                OutlinedButton(onClick = onCancel) { Text(stringResource(R.string.action_cancel)) }
+                OutlinedButton(shape = RectangleShape, onClick = onCancel) { Text(stringResource(R.string.action_cancel)) }
                 IconButton(onClick = onRefresh) {
                     Icon(
                         imageVector = Icons.Filled.Refresh,
@@ -963,6 +964,15 @@ fun EventCard(event: kotlinx.serialization.json.JsonObject, showObject: Boolean 
                 MaterialTheme.colorScheme.surfaceContainerLow
             },
         ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            if (warning) {
+                MaterialTheme.colorScheme.error.copy(alpha = 0.5f)
+            } else {
+                MaterialTheme.colorScheme.outlineVariant
+            },
+        ),
     ) {
         Column(Modifier.padding(Spacing.CardPadding)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1022,6 +1032,11 @@ private fun ContainersTab(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                 ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    MaterialTheme.colorScheme.outlineVariant,
+                ),
             ) {
                 Column(Modifier.padding(Spacing.CardPadding)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1056,12 +1071,12 @@ private fun ContainersTab(
                     }
                     Spacer(Modifier.size(8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap)) {
-                        OutlinedButton(onClick = { onLogs(container.name) }) {
+                        OutlinedButton(shape = RectangleShape, onClick = { onLogs(container.name) }) {
                             Icon(Icons.AutoMirrored.Filled.Article, contentDescription = null, Modifier.size(16.dp))
                             Spacer(Modifier.size(6.dp))
                             Text(stringResource(R.string.action_logs))
                         }
-                        OutlinedButton(onClick = { onShell(container.name) }) {
+                        OutlinedButton(shape = RectangleShape, onClick = { onShell(container.name) }) {
                             Icon(Icons.Filled.Terminal, contentDescription = null, Modifier.size(16.dp))
                             Spacer(Modifier.size(6.dp))
                             Text(stringResource(R.string.action_shell))
@@ -1118,6 +1133,11 @@ private fun PodRow(
             .fillMaxWidth()
             .padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.RowVertical),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outlineVariant,
+        ),
     ) {
         Column(Modifier.padding(Spacing.CardPadding)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1165,12 +1185,12 @@ private fun PodRow(
             }
             Spacer(Modifier.size(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap)) {
-                OutlinedButton(onClick = onLogs, contentPadding = PaddingValues(horizontal = Spacing.ChipPadding)) {
+                OutlinedButton(shape = RectangleShape, onClick = onLogs, contentPadding = PaddingValues(horizontal = Spacing.ChipPadding)) {
                     Icon(Icons.AutoMirrored.Filled.Article, contentDescription = null, Modifier.size(16.dp))
                     Spacer(Modifier.size(6.dp))
                     Text(stringResource(R.string.action_logs))
                 }
-                OutlinedButton(onClick = onShell, contentPadding = PaddingValues(horizontal = Spacing.ChipPadding)) {
+                OutlinedButton(shape = RectangleShape, onClick = onShell, contentPadding = PaddingValues(horizontal = Spacing.ChipPadding)) {
                     Icon(Icons.Filled.Terminal, contentDescription = null, Modifier.size(16.dp))
                     Spacer(Modifier.size(6.dp))
                     Text(stringResource(R.string.action_shell))
@@ -1223,6 +1243,11 @@ private fun ReplicaSetRowCard(row: ReplicaSetRow, onOpen: () -> Unit) {
             } else {
                 MaterialTheme.colorScheme.surfaceContainerLow
             },
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outlineVariant,
         ),
     ) {
         Column(Modifier.padding(Spacing.CardPadding)) {

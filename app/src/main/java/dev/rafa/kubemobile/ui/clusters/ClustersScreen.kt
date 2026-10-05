@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -596,7 +597,7 @@ private fun ImportSheet(
             Spacer(Modifier.size(4.dp))
             SecondaryText(stringResource(R.string.clusters_import_body))
             Spacer(Modifier.size(12.dp))
-            OutlinedButton(onClick = onPickFile, modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(shape = RectangleShape, onClick = onPickFile, modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.Filled.FileOpen, contentDescription = null)
                 Spacer(Modifier.size(8.dp))
                 Text(stringResource(R.string.clusters_import_file))
@@ -612,6 +613,7 @@ private fun ImportSheet(
             )
             Spacer(Modifier.size(8.dp))
             Button(
+                shape = RectangleShape,
                 onClick = { onPaste(text) },
                 enabled = text.isNotBlank(),
                 modifier = Modifier.fillMaxWidth(),
@@ -699,6 +701,7 @@ private fun ImportSheet(
                         Spacer(Modifier.size(16.dp))
                         val selectedCount = state.candidates.count { it.selected }
                         Button(
+                            shape = RectangleShape,
                             onClick = onConfirm,
                             enabled = selectedCount > 0,
                             modifier = Modifier.fillMaxWidth(),
@@ -867,7 +870,7 @@ private fun ManualClusterDialog(
                         )
                     }
                     Spacer(Modifier.size(24.dp))
-                    FilledTonalButton(
+                    FilledTonalButton(shape = RectangleShape, 
                         onClick = { onSave(build()) },
                         enabled = valid,
                         modifier = Modifier.fillMaxWidth(),

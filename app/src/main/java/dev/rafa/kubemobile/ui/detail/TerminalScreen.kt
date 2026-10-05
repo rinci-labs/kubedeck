@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
@@ -276,7 +277,7 @@ fun TerminalScreen(
                             color = MaterialTheme.colorScheme.onErrorContainer,
                             modifier = Modifier.weight(1f),
                         )
-                        Button(onClick = vm::connect) { Text(stringResource(R.string.action_reconnect)) }
+                        Button(shape = RectangleShape, onClick = vm::connect) { Text(stringResource(R.string.action_reconnect)) }
                     }
                 }
             }
@@ -323,16 +324,16 @@ private fun ControlBar(
     onEscape: () -> Unit,
     onTab: () -> Unit,
 ) {
-    Surface(tonalElevation = 3.dp, modifier = Modifier.fillMaxWidth()) {
+    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.ItemGap)) {
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                AssistChip(onClick = onCtrlC, label = { Text("^C") }, enabled = enabled)
-                AssistChip(onClick = onEscape, label = { Text("Esc") }, enabled = enabled)
-                AssistChip(onClick = onTab, label = { Text("Tab") }, enabled = enabled)
+                AssistChip(shape = RectangleShape, onClick = onCtrlC, label = { Text("^C") }, enabled = enabled)
+                AssistChip(shape = RectangleShape, onClick = onEscape, label = { Text("Esc") }, enabled = enabled)
+                AssistChip(shape = RectangleShape, onClick = onTab, label = { Text("Tab") }, enabled = enabled)
                 Spacer(Modifier.weight(1f))
                 Icon(
                     imageVector = Icons.Filled.KeyboardArrowDown,
@@ -389,7 +390,7 @@ private fun TerminalOptionsSheet(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
             ) {
                 SHELL_OPTIONS.forEach { shell ->
-                    FilterChip(
+                    FilterChip(shape = RectangleShape, 
                         selected = state.shell == shell,
                         onClick = { onShell(shell) },
                         label = { Text(shell, maxLines = 1) },
@@ -410,7 +411,7 @@ private fun TerminalOptionsSheet(
                     horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
                 ) {
                     state.containers.forEach { container ->
-                        FilterChip(
+                        FilterChip(shape = RectangleShape, 
                             selected = state.container == container,
                             onClick = { onContainer(container) },
                             label = { Text(container, maxLines = 1) },

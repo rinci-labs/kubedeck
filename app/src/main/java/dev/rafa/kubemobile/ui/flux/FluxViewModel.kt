@@ -1,6 +1,5 @@
 package dev.rafa.kubemobile.ui.flux
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.rafa.kubemobile.data.ClusterSession
@@ -80,7 +79,6 @@ data class FluxUiState(
 
 class FluxViewModel(
     private val app: AppViewModel,
-    private val savedState: SavedStateHandle,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(FluxUiState())

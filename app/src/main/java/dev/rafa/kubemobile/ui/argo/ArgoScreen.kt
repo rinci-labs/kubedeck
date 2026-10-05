@@ -75,7 +75,7 @@ fun ArgoScreen(
     navController: NavController,
     header: @Composable () -> Unit = {},
 ) {
-    val vm = screenViewModel(app) { a, handle -> ArgoViewModel(a, handle) }
+    val vm = screenViewModel(app) { a, _ -> ArgoViewModel(a) }
     val state by vm.state.collectAsStateWithLifecycle()
     val sessionState by app.sessionState.collectAsStateWithLifecycle()
     var sheetTarget by remember { mutableStateOf<ArgoRow?>(null) }

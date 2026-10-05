@@ -1,6 +1,5 @@
 package dev.rafa.kubemobile.ui.argo
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.rafa.kubemobile.data.ClusterSession
@@ -61,7 +60,6 @@ data class ArgoUiState(
 
 class ArgoViewModel(
     private val app: AppViewModel,
-    private val savedState: SavedStateHandle,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ArgoUiState())

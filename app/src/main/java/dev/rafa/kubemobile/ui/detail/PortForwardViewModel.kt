@@ -1,6 +1,5 @@
 package dev.rafa.kubemobile.ui.detail
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.rafa.kubemobile.R
@@ -51,7 +50,6 @@ data class PortForwardUiState(
 
 class PortForwardViewModel(
     private val app: AppViewModel,
-    private val savedState: SavedStateHandle,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(PortForwardUiState())

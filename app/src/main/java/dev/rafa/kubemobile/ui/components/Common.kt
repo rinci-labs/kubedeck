@@ -1,5 +1,6 @@
 package dev.rafa.kubemobile.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,12 +10,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -115,13 +115,14 @@ fun HealthChip(
     val progress = health.progress ?: overallProgress
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(50),
+        shape = RectangleShape,
         color = colors.container,
         contentColor = colors.content,
+        border = BorderStroke(1.dp, colors.content.copy(alpha = 0.35f)),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.TightGap),
             modifier = Modifier.padding(horizontal = Spacing.ChipPadding, vertical = Spacing.TightGap),
         ) {
             when {
@@ -159,7 +160,7 @@ fun ToneDot(tone: ResourceHealth.Tone, size: androidx.compose.ui.unit.Dp = 8.dp)
     Box(
         modifier = Modifier
             .size(size)
-            .background(toneColors(tone).content, RoundedCornerShape(50)),
+            .background(toneColors(tone).content, RectangleShape),
     )
 }
 
@@ -210,10 +211,10 @@ fun EmptyState(
             Spacer(Modifier.size(Spacing.ContentInset))
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap)) {
                 if (secondaryActionLabel != null && onSecondaryAction != null) {
-                    OutlinedButton(onClick = onSecondaryAction) { Text(secondaryActionLabel) }
+                    OutlinedButton(shape = RectangleShape, onClick = onSecondaryAction) { Text(secondaryActionLabel) }
                 }
                 if (actionLabel != null && onAction != null) {
-                    Button(onClick = onAction) { Text(actionLabel) }
+                    Button(shape = RectangleShape, onClick = onAction) { Text(actionLabel) }
                 }
             }
         }
@@ -270,6 +271,8 @@ fun SectionErrorCard(
             .fillMaxWidth()
             .padding(vertical = Spacing.RowVertical),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
     ) {
         Column(Modifier.padding(Spacing.CardPadding)) {
             Text(
@@ -321,9 +324,10 @@ fun InfoChip(
     val colors = toneColors(tone)
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(8.dp),
+        shape = RectangleShape,
         color = colors.container,
         contentColor = colors.content,
+        border = BorderStroke(1.dp, colors.content.copy(alpha = 0.35f)),
     ) {
         Text(
             text = label,
@@ -349,6 +353,8 @@ fun SectionCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Column(Modifier.padding(vertical = Spacing.ItemGap)) {
             if (title != null) {
@@ -360,8 +366,8 @@ fun SectionCard(
                 ) {
                     Text(
                         text = title,
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f),
                     )
                     trailing?.invoke()
@@ -462,7 +468,13 @@ fun TabStrip(
         }
 
         val label: @Composable (String) -> Unit = { text ->
-            Text(text = text, maxLines = 1, softWrap = false, style = textStyle)
+            Text(
+                text = text,
+                maxLines = 1,
+                softWrap = false,
+                style = textStyle,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
 
         if (fitsEvenly) {
@@ -477,6 +489,8 @@ fun TabStrip(
                         selected = index == selected,
                         onClick = { onSelect(index) },
                         text = { label(text) },
+                        selectedContentColor = MaterialTheme.colorScheme.primary,
+                        unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -493,6 +507,8 @@ fun TabStrip(
                         selected = index == selected,
                         onClick = { onSelect(index) },
                         text = { label(text) },
+                        selectedContentColor = MaterialTheme.colorScheme.primary,
+                        unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -734,7 +750,7 @@ fun SecondaryText(text: String, modifier: Modifier = Modifier, maxLines: Int = 2
 @Composable
 fun SectionHeader(text: String, modifier: Modifier = Modifier) {
     Text(
-        text = text,
+        text = text.uppercase(),
         modifier = modifier.padding(
             start = Spacing.ScreenPadding,
             end = Spacing.ScreenPadding,
@@ -742,7 +758,7 @@ fun SectionHeader(text: String, modifier: Modifier = Modifier) {
             bottom = Spacing.ItemGap,
         ),
         style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
 
@@ -759,6 +775,7 @@ fun ListDivider(modifier: Modifier = Modifier) {
             start = Spacing.DividerPadding,
             end = Spacing.DividerPadding,
         ),
+        color = MaterialTheme.colorScheme.outlineVariant,
     )
 }
 

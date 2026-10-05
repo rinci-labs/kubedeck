@@ -72,7 +72,7 @@ fun FluxScreen(
     navController: NavController,
     header: @Composable () -> Unit = {},
 ) {
-    val vm = screenViewModel(app) { a, handle -> FluxViewModel(a, handle) }
+    val vm = screenViewModel(app) { a, _ -> FluxViewModel(a) }
     val state by vm.state.collectAsStateWithLifecycle()
     val sessionState by app.sessionState.collectAsStateWithLifecycle()
     var sheetTarget by remember { mutableStateOf<FluxRow?>(null) }
@@ -271,7 +271,12 @@ private fun FluxSummary(sections: List<FluxSectionState>) {
 private fun StatCard(label: String, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outlineVariant,
+        ),
     ) {
         Column(Modifier.padding(Spacing.CardPadding)) {
             Text(label, style = MaterialTheme.typography.bodyMedium, maxLines = 2)

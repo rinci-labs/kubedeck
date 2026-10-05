@@ -1,5 +1,6 @@
 package dev.rafa.kubemobile.ui.detail
 
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -191,7 +192,7 @@ fun LogsScreen(
         },
         floatingActionButton = {
             if (!state.followed) {
-                AssistChip(
+                AssistChip(shape = RectangleShape, 
                     onClick = {
                         vm.setFollowed(true)
                         scope.launch { listState.scrollToItem(state.lines.lastIndex.coerceAtLeast(0)) }
@@ -304,7 +305,7 @@ private fun PodSelectorRow(state: LogsUiState, vm: LogsViewModel) {
             horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            FilterChip(
+            FilterChip(shape = RectangleShape, 
                 selected = state.allPods,
                 onClick = { vm.setAllPods(true) },
                 label = {
@@ -315,7 +316,7 @@ private fun PodSelectorRow(state: LogsUiState, vm: LogsViewModel) {
                 },
             )
             state.pods.forEach { pod ->
-                FilterChip(
+                FilterChip(shape = RectangleShape, 
                     selected = !state.allPods && state.selectedPod == pod.name,
                     onClick = { vm.setSelectedPod(pod.name) },
                     label = {
@@ -416,7 +417,7 @@ private fun LogOptionsSheet(
                     horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
                 ) {
                     state.containers.forEach { container ->
-                        FilterChip(
+                        FilterChip(shape = RectangleShape, 
                             selected = state.container == container,
                             onClick = { onContainer(container) },
                             label = { Text(container, maxLines = 1) },
@@ -434,7 +435,7 @@ private fun LogOptionsSheet(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
             ) {
                 LOG_TAIL_OPTIONS.forEach { tail ->
-                    FilterChip(
+                    FilterChip(shape = RectangleShape, 
                         selected = state.tailLines == tail,
                         onClick = { onTail(tail) },
                         label = { Text(tail.toString()) },
