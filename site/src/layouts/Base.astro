@@ -7,11 +7,13 @@ interface Props {
 }
 
 const {
-  title = "KubeDeck — Kubernetes, in your pocket",
+  title = "KubeDeck: Kubernetes, in your pocket",
   description = "KubeDeck is an open-source Android Kubernetes client for cluster resources, workloads, logs, exec, port forwarding, Helm, Flux, and Argo CD.",
 } = Astro.props
 const canonical = new URL(Astro.url.pathname, Astro.site)
 const pageUrl = new URL("/", Astro.site)
+const ogImage = new URL("/og.png", Astro.site)
+const ogImageAlt = "KubeDeck: Your cluster, where you are. Open-source Kubernetes client for Android."
 ---
 
 <!doctype html>
@@ -19,7 +21,8 @@ const pageUrl = new URL("/", Astro.site)
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#0a0b0a" />
+    <meta name="theme-color" content="#f4f5f3" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0a0b0a" media="(prefers-color-scheme: dark)" />
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
@@ -28,7 +31,17 @@ const pageUrl = new URL("/", Astro.site)
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={pageUrl} />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:site_name" content="KubeDeck" />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={ogImageAlt} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={ogImageAlt} />
   </head>
   <body>
     <slot />

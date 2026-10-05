@@ -1,0 +1,13 @@
+---
+// Rinci Labs wordmark, from rinci/landing public/logo-text.svg. The squares carry the accent.
+interface Props {
+  class?: string
+}
+
+const { class: className } = Astro.props
+---
+
+<svg viewBox="0 0 1278 456" role="img" aria-label="Rinci Labs" class:list={["h-4 w-auto", className]}>
+  <path fill="currentColor" fill-rule="evenodd" d="M467.417 455.817V151.992H771.86v.051h.227l.669 303.774H671.363l-.669-202.432H568.81v202.432zm658.502 0H820.746V151.374h.051v-.227h304.443V252.54H922.139v101.884h203.78zM313.922 151.827h101.393v303.99H313.922zm862.265 0h101.393v303.99h-101.393zM101.393 101.393v354.424H0V101.393h.008V0h265.881v101.393z" />
+  <path class="fill-primary" d="M1176.187 0h101.393v101.393h-101.393zM313.922 0h101.393v101.393H313.922z" />
+</svg>

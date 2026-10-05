@@ -1,0 +1,24 @@
+---
+import { Button } from "@almach/ui/button"
+import { ArrowUpRight, Download } from "lucide-react"
+import { apkUrl, releaseUrl, version } from "../config/site"
+import Container from "./Container.astro"
+import Reveal from "./Reveal.astro"
+---
+
+<section id="download" aria-labelledby="download-title" class="py-20 sm:py-28">
+  <Container>
+    <Reveal class="relative isolate overflow-hidden rounded-2xl bg-primary px-6 py-14 text-center text-primary-foreground sm:px-12 sm:py-20">
+      <h2 id="download-title" class="text-balance text-3xl font-semibold tracking-tight sm:text-5xl">Take KubeDeck with you.</h2>
+      <p class="mx-auto mt-4 max-w-[52ch] text-pretty leading-relaxed opacity-80">
+        Version {version} for Android 8.0 and newer. Distributed as an APK signed with the Android debug key, not on Google Play.
+      </p>
+      <div class="mt-9 flex flex-wrap justify-center gap-3">
+        <Button href={apkUrl} variant="secondary" size="lg"><Download aria-hidden="true" />Download APK</Button>
+        <Button href={releaseUrl} variant="ghost" size="lg" target="_blank" rel="noreferrer" className="text-primary-foreground ring-1 ring-primary-foreground/30">Release notes<ArrowUpRight aria-hidden="true" /></Button>
+      </div>
+      <div aria-hidden="true" class="absolute -right-24 -top-24 -z-10 size-80 rounded-full border-[48px] border-primary-foreground/10"></div>
+      <div aria-hidden="true" class="absolute -bottom-32 -left-16 -z-10 size-72 rounded-full border-[40px] border-primary-foreground/5"></div>
+    </Reveal>
+  </Container>
+</section>

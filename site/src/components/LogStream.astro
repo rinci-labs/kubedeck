@@ -1,0 +1,34 @@
+---
+import { Card } from "@almach/ui/card"
+
+// Sample log tail for the crash-looping pod shown in the preview's Browse tab.
+const lines = [
+  { time: "12:04:31", level: "INFO", text: "starting payments v2.3.1" },
+  { time: "12:04:31", level: "INFO", text: "connecting to postgres:5432" },
+  { time: "12:04:36", level: "ERROR", text: "dial tcp 10.0.3.14:5432: i/o timeout" },
+  { time: "12:04:36", level: "FATAL", text: "exiting with code 1" },
+]
+
+const levelClass: Record<string, string> = {
+  INFO: "text-muted-foreground",
+  ERROR: "text-warning",
+  FATAL: "text-destructive",
+}
+---
+
+<Card className="w-72 overflow-hidden shadow-xl shadow-foreground/5">
+  <div class="flex items-center justify-between border-b border-border px-4 py-2.5">
+    <span class="truncate font-mono text-[11px] font-medium">payments-5b8d4c7f9-k8wzn</span>
+    <span class="text-[10px] text-muted-foreground">Logs</span>
+  </div>
+  <div class="space-y-1.5 px-4 py-3 font-mono text-[10px] leading-snug">
+    {lines.map((line, index) => (
+      <p class="flex gap-2 motion-safe:animate-rise" style={`animation-delay:${0.6 + index * 0.3}s`}>
+        <span class="shrink-0 text-muted-foreground/70">{line.time}</span>
+        <span class:list={["w-9 shrink-0", levelClass[line.level]]}>{line.level}</span>
+        <span class="min-w-0 break-words">{line.text}</span>
+      </p>
+    ))}
+    <span aria-hidden="true" class="inline-block h-3 w-1.5 bg-primary motion-safe:animate-pulse"></span>
+  </div>
+</Card>

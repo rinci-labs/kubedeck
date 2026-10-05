@@ -1,0 +1,21 @@
+---
+import { Badge } from "@almach/ui/badge"
+import { Card } from "@almach/ui/card"
+import { GitBranch } from "lucide-react"
+---
+
+<Card className="w-60 p-4 shadow-xl shadow-foreground/5">
+  <div class="flex items-center gap-3">
+    <span class="grid size-9 place-items-center rounded-sm bg-success-soft text-primary">
+      <GitBranch aria-hidden="true" className="size-4" strokeWidth={1.75} />
+    </span>
+    <div class="min-w-0">
+      <p class="truncate font-mono text-[11px] font-medium">shop-frontend</p>
+      <p class="text-[10px] text-muted-foreground">Argo CD application</p>
+    </div>
+  </div>
+  <div class="mt-3 flex gap-1.5">
+    <Badge variant="success" size="sm">Synced</Badge>
+    <Badge variant="success" size="sm">Healthy</Badge>
+  </div>
+</Card>

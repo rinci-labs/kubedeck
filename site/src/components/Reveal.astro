@@ -1,0 +1,12 @@
+---
+// Fades content up as it scrolls into view (CSS scroll-driven animation; plays once on load where unsupported).
+interface Props {
+  class?: string
+}
+
+const { class: className } = Astro.props
+---
+
+<div class:list={["motion-safe:animate-rise motion-safe:[animation-timeline:view()] motion-safe:[animation-range:entry_0%_entry_35%]", className]}>
+  <slot />
+</div>

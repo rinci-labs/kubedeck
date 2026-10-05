@@ -1,0 +1,39 @@
+---
+// Hexagon lattice echoing the KubeDeck mark. A few cells pulse in a slow column-by-column sweep.
+const RADIUS = 26
+const COLUMNS = 16
+const ROWS = 18
+const width = Math.sqrt(3) * RADIUS
+
+// Deterministic, so every build draws the same field.
+let seed = 26
+const random = () => (seed = (seed * 16807) % 2147483647) / 2147483647
+
+const corner = (cx: number, cy: number) =>
+  Array.from({ length: 6 }, (_, k) => {
+    const angle = (Math.PI / 180) * (60 * k - 30)
+    return `${(cx + (RADIUS - 2) * Math.cos(angle)).toFixed(1)},${(cy + (RADIUS - 2) * Math.sin(angle)).toFixed(1)}`
+  }).join(" ")
+
+const cells = Array.from({ length: COLUMNS * ROWS }, (_, index) => {
+  const column = index % COLUMNS
+  const row = Math.floor(index / COLUMNS)
+  const cx = column * width + (row % 2 ? width / 2 : 0)
+  const cy = row * RADIUS * 1.5
+  return { points: corner(cx, cy), lit: random() > 0.88, delay: (column * 0.22 + random() * 0.4).toFixed(2) }
+})
+---
+
+<svg
+  aria-hidden="true"
+  viewBox={`0 0 ${(COLUMNS * width).toFixed(0)} ${(ROWS * RADIUS * 1.5).toFixed(0)}`}
+  preserveAspectRatio="xMidYMid slice"
+  class="pointer-events-none absolute inset-0 -z-10 size-full mask-[radial-gradient(ellipse_at_center,black_30%,transparent_75%)]"
+>
+  {cells.map((cell) => (
+    <polygon points={cell.points} class="fill-none stroke-foreground/[0.07]" stroke-width="1" />
+  ))}
+  {cells.filter((cell) => cell.lit).map((cell) => (
+    <polygon points={cell.points} class="fill-primary/30 stroke-primary/60 opacity-15 motion-safe:animate-cell" style={`animation-delay:${cell.delay}s`} />
+  ))}
+</svg>

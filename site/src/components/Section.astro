@@ -1,0 +1,25 @@
+---
+import Container from "./Container.astro"
+import Reveal from "./Reveal.astro"
+
+interface Props {
+  id: string
+  title: string
+  lead?: string
+  tone?: "plain" | "muted"
+}
+
+const { id, title, lead, tone = "plain" } = Astro.props
+---
+
+<section id={id} aria-labelledby={`${id}-title`} class:list={["py-20 sm:py-28", tone === "muted" && "border-y border-border bg-muted/50"]}>
+  <Container>
+    <Reveal class="max-w-2xl">
+      <h2 id={`${id}-title`} class="text-balance text-3xl font-semibold tracking-tight sm:text-5xl">{title}</h2>
+      {lead && <p class="mt-4 max-w-[56ch] text-pretty text-base leading-relaxed text-muted-foreground">{lead}</p>}
+    </Reveal>
+    <Reveal class="mt-12 sm:mt-14">
+      <slot />
+    </Reveal>
+  </Container>
+</section>

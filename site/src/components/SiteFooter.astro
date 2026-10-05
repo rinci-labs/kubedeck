@@ -1,0 +1,75 @@
+---
+import { ArrowUpRight } from "lucide-react"
+import { apkUrl, featuresDocUrl, releaseUrl, repository } from "../config/site"
+import Container from "./Container.astro"
+import DotGrid from "./DotGrid.astro"
+import Logo from "./Logo.astro"
+import RinciLogo from "./RinciLogo.astro"
+
+const groups = [
+  {
+    title: "Product",
+    links: [
+      { label: "Features", href: "#features" },
+      { label: "Security", href: "#security" },
+      { label: "Download APK", href: apkUrl },
+    ],
+  },
+  {
+    title: "Resources",
+    links: [
+      { label: "Release notes", href: releaseUrl, external: true },
+      { label: "Feature reference", href: featuresDocUrl, external: true },
+      { label: "Source code", href: repository, external: true },
+    ],
+  },
+]
+---
+
+<footer class="px-2 pb-2 sm:px-3 sm:pb-3">
+  <div class="relative isolate overflow-hidden rounded-xl bg-muted">
+    <DotGrid from="top-right" />
+
+    <Container class="grid gap-12 pt-16 pb-10 sm:pt-20 md:grid-cols-[1.4fr_1fr_1fr]">
+      <div class="max-w-xs">
+        <Logo />
+        <p class="mt-4 text-sm leading-relaxed text-muted-foreground">
+          An open-source Android client for Kubernetes. Built for checking in on clusters away from the desk.
+        </p>
+      </div>
+
+      {groups.map((group) => (
+        <nav aria-label={group.title}>
+          <h2 class="text-sm font-semibold">{group.title}</h2>
+          <ul class="mt-4 space-y-3 text-sm">
+            {group.links.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  target={link.external ? "_blank" : undefined}
+                  rel={link.external ? "noreferrer" : undefined}
+                  class="group inline-flex items-center gap-1 text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {link.label}
+                  {link.external && <ArrowUpRight aria-hidden="true" className="size-3.5 opacity-0 transition-opacity group-hover:opacity-100" />}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      ))}
+    </Container>
+
+    <Container class="flex items-center gap-2.5 border-t border-border py-6 text-xs text-muted-foreground">
+      <span>Made by</span>
+      <RinciLogo class="text-foreground" />
+    </Container>
+
+    <p
+      aria-hidden="true"
+      class="pointer-events-none -mb-[0.22em] select-none text-center text-[22vw] font-semibold leading-none tracking-tighter text-foreground/[0.04] lg:text-[16rem]"
+    >
+      KubeDeck
+    </p>
+  </div>
+</footer>

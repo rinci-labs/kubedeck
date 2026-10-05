@@ -1,0 +1,16 @@
+---
+// Same mark as the Android launcher icon (app/src/main/res/drawable/ic_launcher_foreground.xml),
+// with the viewBox cropped to the hexagon so it sits flush against the wordmark.
+interface Props {
+  class?: string
+}
+
+const { class: className } = Astro.props
+---
+
+<a href="#top" aria-label="KubeDeck home" class:list={["inline-flex items-center gap-2 text-base leading-none font-semibold tracking-tight text-foreground", className]}>
+  <svg class="h-6 w-auto text-primary" viewBox="31.5 28 45 52" aria-hidden="true">
+    <path fill="currentColor" fill-rule="evenodd" d="M54 28 76.5 41v26L54 80 31.5 67V41L54 28Zm0 15.5a10.5 10.5 0 1 0 0 21 10.5 10.5 0 0 0 0-21Z" />
+  </svg>
+  KubeDeck
+</a>

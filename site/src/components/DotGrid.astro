@@ -1,0 +1,14 @@
+---
+// Decorative dot field, faded out with a radial mask from the given corner.
+interface Props {
+  from?: "top" | "top-right"
+}
+
+const { from = "top" } = Astro.props
+const mask = {
+  top: "mask-[radial-gradient(ellipse_70%_60%_at_50%_0%,black,transparent)]",
+  "top-right": "mask-[radial-gradient(ellipse_at_top_right,black,transparent_70%)]",
+}[from]
+---
+
+<div aria-hidden="true" class:list={["pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(var(--border)_1px,transparent_1px)] bg-size-[22px_22px]", mask]}></div>

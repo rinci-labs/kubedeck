@@ -1,0 +1,36 @@
+---
+import { Badge } from "@almach/ui/badge"
+import { Card } from "@almach/ui/card"
+import { features } from "../config/site"
+import { FeatureIcon } from "./FeatureIcon"
+
+// Six-column bento: wide/narrow, narrow/wide, then an even pair.
+const spans = ["lg:col-span-4", "lg:col-span-2", "lg:col-span-2", "lg:col-span-4", "lg:col-span-3", "lg:col-span-3"]
+---
+
+<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+  {features.map((feature, index) => {
+    const wide = Boolean(feature.tags)
+    return (
+      <Card
+        variant={wide ? "flat" : "default"}
+        className={`group flex flex-col gap-5 p-6 shadow-none transition duration-300 hover:-translate-y-0.5 hover:border-primary/40 sm:p-7 ${spans[index]} ${wide ? "bg-success-soft sm:col-span-2" : ""}`}
+      >
+        <span class="grid size-10 place-items-center rounded-sm bg-background text-primary ring-1 ring-border transition-colors group-hover:bg-primary group-hover:text-primary-foreground group-hover:ring-primary">
+          <FeatureIcon name={feature.icon} />
+        </span>
+        <div class="flex-1">
+          <h3 class="text-lg font-semibold tracking-tight">{feature.title}</h3>
+          <p class="mt-2 max-w-[48ch] text-sm leading-relaxed text-muted-foreground">{feature.description}</p>
+        </div>
+        {feature.tags && (
+          <div class="flex flex-wrap gap-2">
+            {feature.tags.map((tag) => (
+              <Badge variant="outline" className="rounded-full bg-background px-3 py-1 font-mono">{tag}</Badge>
+            ))}
+          </div>
+        )}
+      </Card>
+    )
+  })}
+</div>

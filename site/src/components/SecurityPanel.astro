@@ -1,0 +1,26 @@
+---
+import { Card } from "@almach/ui/card"
+import { Info, Lock, Server, ShieldCheck } from "lucide-react"
+import { limitations, securityPoints } from "../config/site"
+
+const icons = [Lock, Server, ShieldCheck]
+---
+
+<Card className="overflow-hidden shadow-none">
+  <div class="grid divide-y divide-border md:grid-cols-3 md:divide-x md:divide-y-0">
+    {securityPoints.map((point, index) => {
+      const Icon = icons[index]
+      return (
+        <div class="p-6 sm:p-8">
+          <Icon aria-hidden="true" className="size-5 text-primary" strokeWidth={1.75} />
+          <h3 class="mt-5 font-semibold tracking-tight">{point.title}</h3>
+          <p class="mt-2 text-sm leading-relaxed text-muted-foreground">{point.description}</p>
+        </div>
+      )
+    })}
+  </div>
+  <div class="flex gap-3 border-t border-border bg-muted px-6 py-5 text-sm leading-relaxed text-muted-foreground sm:px-8">
+    <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+    <p><strong class="font-medium text-foreground">Know the edges.</strong> {limitations}</p>
+  </div>
+</Card>

@@ -15,83 +15,113 @@
   font-weight: 100 900;
 }
 
-@font-face {
-  font-family: "Geist Pixel";
-  src: url("/fonts/GeistPixel-Square.woff2") format("woff2");
-  font-display: swap;
-  font-weight: 400;
+/* KubeDeck palette, mirrored from app/src/main/java/dev/rafa/kubemobile/ui/Theme.kt.
+   Token names follow @almach/ui so its components theme without overrides. */
+:root {
+  color-scheme: light;
+  --background: #f4f5f3;
+  --foreground: #171b19;
+  --card: #fbfaf6;
+  --muted: #eaede8;
+  --muted-foreground: #59625d;
+  --border: #d4d8d1;
+  --primary: #2f6b4f;
+  --primary-foreground: #fbfaf6;
+  --success: #2f6b4f;
+  --success-soft: #d8ede0;
+  --warning: #9a6a12;
+  --destructive: #b8433a;
 }
 
-@theme {
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --background: #0a0b0a;
+    --foreground: #f4f5f3;
+    --card: #101210;
+    --muted: #161916;
+    --muted-foreground: #9aa09a;
+    --border: #1e211e;
+    --primary: #6fbf95;
+    --primary-foreground: #0a0b0a;
+    --success: #6fbf95;
+    --success-soft: #15241c;
+    --warning: #e0b15a;
+    --destructive: #e5695f;
+  }
+}
+
+@theme inline {
   --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, monospace;
-  --font-pixel: "Geist Pixel", "Geist Mono", monospace;
-  --color-ink: #0a0b0a;
-  --color-ink-2: #101210;
-  --color-paper: #f4f5f3;
-  --color-dim: #9aa09a;
-  --color-faint: #62675f;
-  --color-line: #1e211e;
-  --color-signal: #6fbf95;
-  --color-background: var(--color-ink);
-  --color-primary: var(--color-signal);
-  --color-primary-foreground: var(--color-ink);
-  --color-input: var(--color-line);
-  --color-border: var(--color-line);
-  --color-ring: var(--color-signal);
-  --color-ring-offset: var(--color-ink);
-  --color-accent: var(--color-line);
-  --color-accent-foreground: var(--color-paper);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--foreground);
+  --color-popover: var(--card);
+  --color-popover-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--muted);
+  --color-secondary-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--muted);
+  --color-accent-foreground: var(--foreground);
+  --color-border: var(--border);
+  --color-input: var(--border);
+  --color-ring: var(--primary);
+  --color-success: var(--success);
+  --color-success-foreground: var(--primary-foreground);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--background);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--background);
+
+  --radius-sm: 0.625rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 1.75rem;
+  --radius-2xl: 2.25rem;
+
+  --animate-rise: rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-cell: cell 5.2s ease-in-out infinite both;
+  --animate-float: float 7s ease-in-out infinite;
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  @keyframes cell {
+    0%, 100% { opacity: 0.12; }
+    12% { opacity: 0.9; }
+    40% { opacity: 0.12; }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
 }
 
 @layer base {
   html {
-    color-scheme: dark;
     scroll-behavior: smooth;
-    background: var(--color-ink);
+    scroll-padding-top: 5rem;
   }
 
   body {
-    min-width: 320px;
-    margin: 0;
-    background: var(--color-ink);
-    color: var(--color-paper);
-    font-family: var(--font-sans);
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
+    @apply min-w-[320px] bg-background font-sans text-foreground antialiased;
   }
 
   ::selection {
-    background: var(--color-signal);
-    color: var(--color-ink);
-  }
-
-  :focus-visible {
-    outline: 2px solid var(--color-signal);
-    outline-offset: 3px;
+    @apply bg-primary text-primary-foreground;
   }
 
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
-    *, *::before, *::after {
-      animation-duration: .01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: .01ms !important;
-      scroll-behavior: auto !important;
-    }
   }
 }
-
-@utility pixel-type {
-  font-family: var(--font-pixel);
-  letter-spacing: .08em;
-  text-transform: uppercase;
-}
-
-@layer utilities {
-  .nav-links[data-open="true"] {
-    display: flex;
-    flex-direction: column;
-  }
-}
-
