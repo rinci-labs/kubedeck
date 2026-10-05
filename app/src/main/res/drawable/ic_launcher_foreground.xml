@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Compact KubeDeck mark. The saturated brand blue keeps the hex recognizable on the light tile;
+  Compact KubeDeck mark in the mint signal on the ink tile, matching the app theme and the website;
   the 52dp mark sits inside the adaptive icon safe zone with breathing room under every mask.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -9,7 +9,7 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
     <path
-        android:fillColor="#326CE5"
+        android:fillColor="#6FBF95"
         android:fillType="evenOdd"
         android:pathData="M54,28 L76.5,41 L76.5,67 L54,80 L31.5,67 L31.5,41 Z M54,43.5 A10.5,10.5 0 1,0 54,64.5 A10.5,10.5 0 1,0 54,43.5 Z" />
 </vector>
