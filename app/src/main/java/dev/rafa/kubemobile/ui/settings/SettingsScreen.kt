@@ -9,6 +9,7 @@ import android.os.Build
 import android.provider.Settings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
@@ -170,29 +171,45 @@ fun SettingsScreen(app: AppViewModel, navController: NavController) {
             )
         },
     ) { padding ->
-        Box(Modifier.padding(padding).fillMaxSize()) {
+        // App-level sections (updates, about) never depend on a cluster, so the list always
+        // renders; only the cluster block at the top changes with the session. Every section is a
+        // rounded card one gutter in from the edges, stacked on an 8 dp rhythm.
+        LazyColumn(
+            modifier = Modifier.padding(padding).fillMaxSize(),
+            contentPadding = PaddingValues(top = Spacing.TopBarToContent, bottom = ListBottomPadding),
+        ) {
             when {
-                profile == null -> EmptyState(
-                    title = stringResource(R.string.state_no_cluster_title),
-                    body = stringResource(R.string.settings_no_cluster),
-                    actionLabel = stringResource(R.string.state_go_to_clusters),
-                    onAction = { navController.navigateToTop(Routes.CLUSTERS) },
-                )
+                profile == null -> item {
+                    ClusterStatusCard(
+                        title = stringResource(R.string.state_no_cluster_title),
+                        body = stringResource(R.string.settings_no_cluster),
+                        tone = ResourceHealth.Tone.NEUTRAL,
+                        actionLabel = stringResource(R.string.state_go_to_clusters),
+                        onAction = { navController.navigateToTop(Routes.CLUSTERS) },
+                    )
+                }
 
-                sessionState is SessionState.Connecting -> LoadingState(
-                    label = stringResource(R.string.state_connecting),
-                )
+                sessionState is SessionState.Connecting -> item {
+                    ClusterStatusCard(
+                        title = profile.name,
+                        body = stringResource(R.string.state_connecting),
+                        tone = ResourceHealth.Tone.PROGRESS,
+                        loading = true,
+                    )
+                }
 
-                sessionState is SessionState.Failed && session == null -> ErrorState(
-                    error = (sessionState as SessionState.Failed).error,
-                    onRetry = { app.connectInBackground(profile) },
-                )
+                sessionState is SessionState.Failed && session == null -> item {
+                    val error = (sessionState as SessionState.Failed).error
+                    ClusterStatusCard(
+                        title = stringResource(error.titleRes),
+                        body = error.message,
+                        tone = ResourceHealth.Tone.BAD,
+                        actionLabel = stringResource(R.string.action_retry),
+                        onAction = { app.connectInBackground(profile) },
+                    )
+                }
 
-                // Every section is a rounded card one gutter in from the edges, stacked on an
-                // 8 dp rhythm (4 dp above and below each).
-                else -> LazyColumn(
-                    contentPadding = PaddingValues(top = Spacing.TopBarToContent, bottom = ListBottomPadding),
-                ) {
+                else -> {
                     item {
                         SectionCard(
                             title = stringResource(R.string.label_cluster_info),
@@ -323,84 +340,84 @@ fun SettingsScreen(app: AppViewModel, navController: NavController) {
                             }
                         }
                     }
+                }
+            }
 
-                    item {
-                        SectionCard(
-                            title = stringResource(R.string.label_about),
-                            modifier = Modifier.cardGutter(),
+            item {
+                SectionCard(
+                    title = stringResource(R.string.label_about),
+                    modifier = Modifier.cardGutter(),
+                ) {
+                    Row(
+                        Modifier.padding(horizontal = Spacing.CardPadding, vertical = Spacing.ItemGap),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        IconTile(Icons.Filled.Lock)
+                        Spacer(Modifier.size(Spacing.ChipPadding))
+                        Text(
+                            text = stringResource(R.string.settings_about_body),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+            }
+
+            item {
+                SectionCard(
+                    title = "Updates",
+                    modifier = Modifier.cardGutter(),
+                ) {
+                    KeyValueRow("Version", BuildConfig.VERSION_NAME)
+                    ListItem(
+                        colors = transparentRow,
+                        leadingContent = { IconTile(Icons.Filled.SystemUpdate) },
+                        modifier = Modifier.clickable(
+                            enabled = updateState !is UpdateState.Checking && updateState !is UpdateState.Downloading,
                         ) {
-                            Row(
-                                Modifier.padding(horizontal = Spacing.CardPadding, vertical = Spacing.ItemGap),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                IconTile(Icons.Filled.Lock)
-                                Spacer(Modifier.size(Spacing.ChipPadding))
-                                Text(
-                                    text = stringResource(R.string.settings_about_body),
+                            when (updateState) {
+                                is UpdateState.Available, is UpdateState.ReadyToInstall -> showUpdateDialog = true
+                                else -> checkUpdates()
+                            }
+                        },
+                        headlineContent = { Text("Check for updates") },
+                        supportingContent = {
+                            when (val s = updateState) {
+                                is UpdateState.Idle -> SecondaryText("Tap to check GitHub Releases")
+                                is UpdateState.Checking -> SecondaryText("Checking…")
+                                is UpdateState.UpToDate -> SecondaryText("App is up to date")
+                                is UpdateState.Available -> SecondaryText("${s.release.tag_name} available")
+                                is UpdateState.Downloading -> SecondaryText("Downloading ${(s.progress * 100).toInt()}%")
+                                is UpdateState.ReadyToInstall -> SecondaryText("Ready to install")
+                                is UpdateState.Error -> Text(
+                                    s.message,
                                     style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error,
                                 )
                             }
-                        }
-                    }
-
-                    item {
-                        SectionCard(
-                            title = "Updates",
-                            modifier = Modifier.cardGutter(),
-                        ) {
-                            KeyValueRow("Version", BuildConfig.VERSION_NAME)
-                            ListItem(
-                                colors = transparentRow,
-                                leadingContent = { IconTile(Icons.Filled.SystemUpdate) },
-                                modifier = Modifier.clickable(
-                                    enabled = updateState !is UpdateState.Checking && updateState !is UpdateState.Downloading,
-                                ) {
-                                    when (updateState) {
-                                        is UpdateState.Available, is UpdateState.ReadyToInstall -> showUpdateDialog = true
-                                        else -> checkUpdates()
-                                    }
-                                },
-                                headlineContent = { Text("Check for updates") },
-                                supportingContent = {
-                                    when (val s = updateState) {
-                                        is UpdateState.Idle -> SecondaryText("Tap to check GitHub Releases")
-                                        is UpdateState.Checking -> SecondaryText("Checking…")
-                                        is UpdateState.UpToDate -> SecondaryText("App is up to date")
-                                        is UpdateState.Available -> SecondaryText("${s.release.tag_name} available")
-                                        is UpdateState.Downloading -> SecondaryText("Downloading ${(s.progress * 100).toInt()}%")
-                                        is UpdateState.ReadyToInstall -> SecondaryText("Ready to install")
-                                        is UpdateState.Error -> Text(
-                                            s.message,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.error,
-                                        )
-                                    }
-                                },
-                                trailingContent = {
-                                    when (updateState) {
-                                        is UpdateState.Checking -> CircularProgressIndicator(
-                                            Modifier.size(24.dp),
-                                            strokeWidth = 2.dp,
-                                        )
-                                        is UpdateState.Downloading -> CircularProgressIndicator(
-                                            progress = { (updateState as UpdateState.Downloading).progress },
-                                            modifier = Modifier.size(24.dp),
-                                            strokeWidth = 2.dp,
-                                        )
-                                        is UpdateState.Available -> FilledTonalButton(onClick = { showUpdateDialog = true }) {
-                                            Text("View")
-                                        }
-                                        is UpdateState.ReadyToInstall -> FilledTonalButton(onClick = { showUpdateDialog = true }) {
-                                            Text("Install")
-                                        }
-                                        else -> OutlinedButton(onClick = checkUpdates) {
-                                            Text("Check")
-                                        }
-                                    }
-                                },
-                            )
-                        }
-                    }
+                        },
+                        trailingContent = {
+                            when (updateState) {
+                                is UpdateState.Checking -> CircularProgressIndicator(
+                                    Modifier.size(24.dp),
+                                    strokeWidth = 2.dp,
+                                )
+                                is UpdateState.Downloading -> CircularProgressIndicator(
+                                    progress = { (updateState as UpdateState.Downloading).progress },
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.dp,
+                                )
+                                is UpdateState.Available -> FilledTonalButton(onClick = { showUpdateDialog = true }) {
+                                    Text("View")
+                                }
+                                is UpdateState.ReadyToInstall -> FilledTonalButton(onClick = { showUpdateDialog = true }) {
+                                    Text("Install")
+                                }
+                                else -> OutlinedButton(onClick = checkUpdates) {
+                                    Text("Check")
+                                }
+                            }
+                        },
+                    )
                 }
             }
         }
@@ -583,6 +600,55 @@ private fun WarningCard(text: String) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onErrorContainer,
             )
+        }
+    }
+}
+
+/**
+ * The cluster block when there is no live session: what is going on, plus the one action that
+ * moves it forward. Kept card-sized so the app sections below it stay reachable.
+ */
+@Composable
+private fun ClusterStatusCard(
+    title: String,
+    body: String,
+    tone: ResourceHealth.Tone,
+    loading: Boolean = false,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null,
+) {
+    SectionCard(
+        title = stringResource(R.string.label_cluster_info),
+        modifier = Modifier.cardGutter(),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = Spacing.CardPadding, vertical = Spacing.ItemGap),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                IconTile(Icons.Filled.Dns, tone = tone)
+                if (loading) {
+                    CircularProgressIndicator(Modifier.size(40.dp), strokeWidth = 2.dp)
+                }
+            }
+            Spacer(Modifier.size(Spacing.ChipPadding))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                SecondaryText(body, maxLines = 3)
+            }
+        }
+        if (actionLabel != null && onAction != null) {
+            FilledTonalButton(
+                onClick = onAction,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Spacing.CardPadding, vertical = Spacing.ItemGap),
+            ) { Text(actionLabel) }
         }
     }
 }
