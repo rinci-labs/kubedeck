@@ -54,8 +54,10 @@ object Pem {
 
     private fun extractBody(pem: String): String? {
         val lines = pem.lines()
-        val start = lines.indexOfFirst { it.startsWith("-----BEGIN") }
-        val end = lines.indexOfLast { it.startsWith("-----END") }
+        // Skip leading blocks such as `EC PARAMETERS` that `openssl ecparam -genkey` emits.
+        val start = lines.indexOfFirst { it.startsWith("-----BEGIN") && it.contains("PRIVATE KEY") }
+            .takeIf { it >= 0 } ?: lines.indexOfFirst { it.startsWith("-----BEGIN") }
+        val end = (start + 1 until lines.size).firstOrNull { lines[it].startsWith("-----END") } ?: -1
         if (start < 0 || end <= start) return null
         return lines.subList(start + 1, end).joinToString("\n").trim()
     }
@@ -80,13 +82,18 @@ object Pem {
         return derSequence(derInteger(byteArrayOf(0)), algorithm, derOctetString(der))
     }
 
-    /** SEC1 ECPrivateKey -> PKCS#8 PrivateKeyInfo, reusing the embedded named-curve OID. */
+    private val EC_PUBLIC_KEY_OID = byteArrayOf(0x06, 0x07, 0x2A, 0x86.toByte(), 0x48, 0xCE.toByte(), 0x3D, 0x02, 0x01)
+
+    /**
+     * SEC1 ECPrivateKey -> PKCS#8 PrivateKeyInfo, reusing the embedded named-curve OID. The curve
+     * lives inside the explicit `[0] parameters` field, not at the top level of the SEQUENCE.
+     */
     private fun wrapEcSec1(der: ByteArray): ByteArray {
-        val items = derItems(der)
-        val curveOid = items.firstOrNull { it.isNotEmpty() && it[0] == 0x06.toByte() }
+        val parameters = derItems(der).firstOrNull { it.isNotEmpty() && it[0] == 0xA0.toByte() }
+        val curveOid = parameters?.let { derContent(it) }?.takeIf { it.isNotEmpty() && it[0] == 0x06.toByte() }
             ?: error("EC private key is missing its named curve parameters")
-        val algorithm = derSequence(curveOid)
-        return derSequence(derInteger(byteArrayOf(1)), algorithm, derOctetString(der))
+        val algorithm = derSequence(EC_PUBLIC_KEY_OID, curveOid)
+        return derSequence(derInteger(byteArrayOf(0)), algorithm, derOctetString(der))
     }
 
     fun keyStore(certificates: List<X509Certificate>, key: PrivateKey, password: CharArray): KeyStore {
@@ -146,6 +153,14 @@ object Pem {
     private fun derInteger(value: ByteArray) = derEncode(0x02, value)
     private fun derNull() = byteArrayOf(0x05, 0x00)
     private fun derOctetString(value: ByteArray) = derEncode(0x04, value)
+
+    /** Strips the tag and length header from a single TLV blob. */
+    private fun derContent(tlv: ByteArray): ByteArray {
+        if (tlv.size < 2) return ByteArray(0)
+        val first = tlv[1].toInt() and 0xFF
+        val header = if (first and 0x80 == 0) 2 else 2 + (first and 0x7F)
+        return if (header > tlv.size) ByteArray(0) else tlv.copyOfRange(header, tlv.size)
+    }
 
     /** Splits a DER SEQUENCE into its raw child TLV blobs. */
     private fun derItems(der: ByteArray): List<ByteArray> {
