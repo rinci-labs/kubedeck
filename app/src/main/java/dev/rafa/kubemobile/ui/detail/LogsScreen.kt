@@ -29,6 +29,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.ClearAll
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SearchOff
@@ -197,74 +204,38 @@ fun LogsScreen(
                         Icon(
                             imageVector = if (searchOpen) Icons.Filled.SearchOff else Icons.Filled.Search,
                             contentDescription = stringResource(R.string.logs_search),
-                            tint = if (searchOpen) MaterialTheme.colorScheme.primary else Color.Unspecified,
-                        )
-                    }
-                    // Wrapping is the toggle reached for most while reading, so it gets its own
-                    // button; it highlights while on.
-                    IconButton(onClick = { vm.setWrap(!state.wrap) }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.WrapText,
-                            contentDescription = stringResource(R.string.logs_wrap),
-                            tint = if (state.wrap) {
+                            tint = if (searchOpen) {
                                 MaterialTheme.colorScheme.primary
                             } else {
                                 MaterialTheme.colorScheme.onSurfaceVariant
                             },
                         )
                     }
+                    // Everything else (wrap, stream window, refresh, clear, copy, share) lives in
+                    // one options sheet so the bar keeps room for the title and status line.
                     IconButton(onClick = { optionsOpen = true }) {
                         Icon(
                             imageVector = Icons.Filled.Tune,
                             contentDescription = stringResource(R.string.logs_options),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    OverflowMenu(
-                        actions = listOf(
-                            MenuAction(
-                                label = stringResource(R.string.action_refresh),
-                                onClick = vm::restart,
-                                leadingIcon = Icons.Filled.Refresh,
-                            ),
-                            MenuAction(
-                                label = stringResource(R.string.logs_clear),
-                                onClick = vm::clear,
-                                enabled = state.lines.isNotEmpty(),
-                                leadingIcon = Icons.Filled.ClearAll,
-                            ),
-                            MenuAction(
-                                label = stringResource(R.string.logs_copy_all),
-                                onClick = {
-                                    context.copyToClipboard("logs", vm.fullText())
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar(context.getString(R.string.action_copied))
-                                    }
-                                },
-                            ),
-                            MenuAction(
-                                label = stringResource(R.string.logs_share),
-                                onClick = { shareText(context, "logs-$pod.txt", vm.fullText()) },
-                            ),
-                            if (state.streaming) {
-                                MenuAction(stringResource(R.string.action_stop), vm::stop)
-                            } else {
-                                MenuAction(stringResource(R.string.action_start), vm::restart)
-                            },
-                        ),
-                    )
                 },
             )
         },
         floatingActionButton = {
             if (!state.followed) {
-                AssistChip(
-                    shape = KubeShapes.Pill,
+                // A solid, raised pill: a transparent chip disappears into the log text under it.
+                androidx.compose.material3.ExtendedFloatingActionButton(
                     onClick = {
                         vm.setFollowed(true)
                         scope.launch { listState.scrollToItem(visibleLines.lastIndex.coerceAtLeast(0)) }
                     },
-                    label = { Text(stringResource(R.string.action_jump_latest)) },
-                    leadingIcon = { Icon(Icons.Filled.ArrowDownward, contentDescription = null, Modifier.size(16.dp)) },
+                    shape = KubeShapes.Pill,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    icon = { Icon(Icons.Filled.ArrowDownward, contentDescription = null, Modifier.size(18.dp)) },
+                    text = { Text(stringResource(R.string.action_jump_latest)) },
                 )
             }
         },
@@ -375,6 +346,21 @@ fun LogsScreen(
             onSince = vm::setSince,
             onFollow = vm::setFollow,
             onPrevious = vm::setPrevious,
+            onStartStop = { if (state.streaming) vm.stop() else vm.restart() },
+            onRefresh = {
+                optionsOpen = false
+                vm.restart()
+            },
+            onClear = vm::clear,
+            onCopy = {
+                context.copyToClipboard("logs", vm.fullText())
+                optionsOpen = false
+                scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.action_copied)) }
+            },
+            onShare = {
+                optionsOpen = false
+                shareText(context, "logs-$pod.txt", vm.fullText())
+            },
             onDismiss = { optionsOpen = false },
         )
     }
@@ -576,7 +562,7 @@ private fun LogLine(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun LogOptionsSheet(
     state: LogsUiState,
@@ -587,93 +573,124 @@ private fun LogOptionsSheet(
     onSince: (Long?) -> Unit,
     onFollow: (Boolean) -> Unit,
     onPrevious: (Boolean) -> Unit,
+    onStartStop: () -> Unit,
+    onRefresh: () -> Unit,
+    onClear: () -> Unit,
+    onCopy: () -> Unit,
+    onShare: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState()) {
-        Column(Modifier.fillMaxWidth().padding(bottom = Spacing.SheetPadding)) {
+    val rowColors = ListItemDefaults.colors(containerColor = Color.Transparent)
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = Spacing.SectionGap),
+        ) {
             Text(
                 text = stringResource(R.string.logs_options),
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(horizontal = Spacing.SheetPadding, vertical = Spacing.ItemGap),
             )
-            // In a merged view every pod's containers are read, so a container picker would be a
-            // lie; the sheet says why instead of hiding the control without explanation.
-            if (state.tagged) {
-                SecondaryText(
-                    text = stringResource(R.string.logs_options_merged),
-                    modifier = Modifier.padding(horizontal = Spacing.SheetPadding, vertical = Spacing.RowVertical),
+
+            // Everything that acts on the transcript, one tap each, so the app bar can stay quiet.
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Spacing.SheetPadding, vertical = Spacing.ItemGap),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
+            ) {
+                SheetAction(
+                    icon = if (state.streaming) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    label = stringResource(if (state.streaming) R.string.action_stop else R.string.action_start),
+                    onClick = onStartStop,
+                    modifier = Modifier.weight(1f),
                 )
-            } else if (state.containers.size > 1) {
-                LogsSheetLabel(stringResource(R.string.logs_container))
-                androidx.compose.foundation.layout.FlowRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = Spacing.SheetPadding),
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
-                ) {
-                    state.containers.forEach { container ->
-                        FilterChip(
-                            shape = KubeShapes.Pill,
-                            selected = state.container == container,
-                            onClick = { onContainer(container) },
-                            label = { Text(container, maxLines = 1) },
-                        )
-                    }
-                }
+                SheetAction(Icons.Filled.Refresh, stringResource(R.string.action_refresh), onRefresh, Modifier.weight(1f))
+                SheetAction(
+                    icon = Icons.Filled.ClearAll,
+                    label = stringResource(R.string.logs_clear),
+                    onClick = onClear,
+                    modifier = Modifier.weight(1f),
+                    enabled = state.lines.isNotEmpty(),
+                )
+                SheetAction(
+                    icon = Icons.Filled.ContentCopy,
+                    label = stringResource(R.string.logs_action_copy),
+                    onClick = onCopy,
+                    modifier = Modifier.weight(1f),
+                    enabled = state.lines.isNotEmpty(),
+                )
+                SheetAction(
+                    icon = Icons.Filled.Share,
+                    label = stringResource(R.string.logs_action_share),
+                    onClick = onShare,
+                    modifier = Modifier.weight(1f),
+                    enabled = state.lines.isNotEmpty(),
+                )
             }
-            LogsSheetLabel(stringResource(R.string.logs_tail_size))
-            Row(
-                Modifier.padding(horizontal = Spacing.SheetPadding),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
-            ) {
-                LOG_TAIL_OPTIONS.forEach { tail ->
-                    FilterChip(
-                        shape = KubeShapes.Pill,
-                        selected = state.tailLines == tail,
-                        onClick = { onTail(tail) },
-                        label = { Text(tail.toString()) },
-                    )
-                }
-            }
-            LogsSheetLabel(stringResource(R.string.logs_since))
-            Row(
-                Modifier
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = Spacing.SheetPadding),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
-            ) {
-                LOG_SINCE_OPTIONS.forEach { (label, seconds) ->
-                    FilterChip(
-                        shape = KubeShapes.Pill,
-                        selected = state.sinceSeconds == seconds,
-                        onClick = { onSince(seconds) },
-                        label = { Text(label) },
-                    )
-                }
-            }
-            Spacer(Modifier.size(Spacing.ContentInset))
-            // The stream toggles read as one settings group: a single rounded card with
-            // inset dividers, rather than three loose full-bleed rows.
-            val rowColors = ListItemDefaults.colors(containerColor = Color.Transparent)
+
+            LogsSheetLabel(stringResource(R.string.logs_section_display))
             ListGroup {
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.logs_wrap)) },
-                    supportingContent = { SecondaryText(stringResource(R.string.logs_wrap_hint)) },
                     trailingContent = { Switch(checked = state.wrap, onCheckedChange = onWrap) },
                     colors = rowColors,
+                    modifier = Modifier.clickable { onWrap(!state.wrap) },
                 )
                 ListDivider()
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.label_timestamps)) },
                     trailingContent = { Switch(checked = state.timestamps, onCheckedChange = onTimestamps) },
                     colors = rowColors,
+                    modifier = Modifier.clickable { onTimestamps(!state.timestamps) },
                 )
+            }
+
+            LogsSheetLabel(stringResource(R.string.logs_section_stream))
+            ListGroup {
+                Column(Modifier.padding(vertical = Spacing.ItemGap)) {
+                    SheetChipRow(stringResource(R.string.logs_tail_size)) {
+                        LOG_TAIL_OPTIONS.forEach { tail ->
+                            FilterChip(
+                                shape = KubeShapes.Pill,
+                                selected = state.tailLines == tail,
+                                onClick = { onTail(tail) },
+                                label = { Text(tail.toString()) },
+                            )
+                        }
+                    }
+                    SheetChipRow(stringResource(R.string.logs_since)) {
+                        LOG_SINCE_OPTIONS.forEach { (label, seconds) ->
+                            FilterChip(
+                                shape = KubeShapes.Pill,
+                                selected = state.sinceSeconds == seconds,
+                                onClick = { onSince(seconds) },
+                                label = { Text(label) },
+                            )
+                        }
+                    }
+                    if (!state.tagged && state.containers.size > 1) {
+                        SheetChipRow(stringResource(R.string.logs_container)) {
+                            state.containers.forEach { container ->
+                                FilterChip(
+                                    shape = KubeShapes.Pill,
+                                    selected = state.container == container,
+                                    onClick = { onContainer(container) },
+                                    label = { Text(container, maxLines = 1) },
+                                )
+                            }
+                        }
+                    }
+                }
                 ListDivider()
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.label_follow)) },
                     supportingContent = { SecondaryText(stringResource(R.string.logs_follow_hint)) },
                     trailingContent = { Switch(checked = state.follow, onCheckedChange = onFollow) },
                     colors = rowColors,
+                    modifier = Modifier.clickable { onFollow(!state.follow) },
                 )
                 ListDivider()
                 ListItem(
@@ -681,9 +698,79 @@ private fun LogOptionsSheet(
                     supportingContent = { SecondaryText(stringResource(R.string.logs_previous_hint)) },
                     trailingContent = { Switch(checked = state.previous, onCheckedChange = onPrevious) },
                     colors = rowColors,
+                    modifier = Modifier.clickable { onPrevious(!state.previous) },
+                )
+            }
+            // In a merged view every pod's containers are read, so a container picker would be a
+            // lie; the sheet says why instead of hiding the control without explanation.
+            if (state.tagged) {
+                SecondaryText(
+                    text = stringResource(R.string.logs_options_merged),
+                    modifier = Modifier.padding(horizontal = Spacing.SheetPadding, vertical = Spacing.ItemGap),
                 )
             }
         }
+    }
+}
+
+/** A labelled, horizontally scrolling chip row inside a sheet card. */
+@Composable
+private fun SheetChipRow(label: String, chips: @Composable () -> Unit) {
+    Column(Modifier.padding(vertical = Spacing.TightGap)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = Spacing.CardPadding),
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = Spacing.CardPadding),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
+        ) { chips() }
+    }
+}
+
+/** An icon-over-label action tile for the sheet's quick action row. */
+@Composable
+private fun SheetAction(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    val alpha = if (enabled) 1f else 0.38f
+    Column(
+        modifier = modifier
+            .clip(KubeShapes.Field)
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(vertical = Spacing.ItemGap),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            Modifier
+                .size(44.dp)
+                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = alpha), KubeShapes.Tile),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary.copy(alpha = alpha),
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        Spacer(Modifier.size(Spacing.TightGap))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
@@ -697,8 +784,8 @@ private fun LogsSheetLabel(text: String) {
         modifier = Modifier.padding(
             start = Spacing.SheetPadding,
             end = Spacing.SheetPadding,
-            top = Spacing.ItemGap,
-            bottom = Spacing.TightGap,
+            top = Spacing.ContentInset,
+            bottom = Spacing.ItemGap,
         ),
     )
 }
