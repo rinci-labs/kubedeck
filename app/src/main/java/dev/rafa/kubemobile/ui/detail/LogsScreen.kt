@@ -1,12 +1,12 @@
 package dev.rafa.kubemobile.ui.detail
 
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -27,6 +27,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
@@ -35,7 +36,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -62,8 +62,12 @@ import androidx.navigation.NavController
 import dev.rafa.kubemobile.R
 import dev.rafa.kubemobile.ui.Spacing
 import dev.rafa.kubemobile.ui.AppViewModel
+import dev.rafa.kubemobile.ui.KubeShapes
 import dev.rafa.kubemobile.ui.components.EmptyState
 import dev.rafa.kubemobile.ui.components.ErrorState
+import dev.rafa.kubemobile.ui.components.InlineBanner
+import dev.rafa.kubemobile.ui.components.ListDivider
+import dev.rafa.kubemobile.ui.components.ListGroup
 import dev.rafa.kubemobile.ui.components.LoadingState
 import dev.rafa.kubemobile.ui.components.MenuAction
 import dev.rafa.kubemobile.ui.components.OverflowMenu
@@ -192,7 +196,8 @@ fun LogsScreen(
         },
         floatingActionButton = {
             if (!state.followed) {
-                AssistChip(shape = RectangleShape, 
+                AssistChip(
+                    shape = KubeShapes.Pill,
                     onClick = {
                         vm.setFollowed(true)
                         scope.launch { listState.scrollToItem(state.lines.lastIndex.coerceAtLeast(0)) }
@@ -254,28 +259,18 @@ fun LogsScreen(
                         }
                     }
                 }
+                // A stream that dies after producing output keeps the transcript readable and
+                // floats a rounded banner over the bottom instead of replacing the lines.
                 if (state.error != null && state.lines.isNotEmpty()) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.errorContainer,
+                    InlineBanner(
+                        title = stringResource(state.error!!.titleRes),
+                        message = state.error!!.message,
+                        actionLabel = stringResource(R.string.action_retry),
+                        onAction = vm::restart,
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
-                            .fillMaxWidth(),
-                    ) {
-                        Row(
-                            Modifier.padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.ItemGap),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = state.error!!.message,
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.weight(1f),
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            TextButton(onClick = vm::restart) { Text(stringResource(R.string.action_retry)) }
-                        }
-                    }
+                            .padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.ItemGap),
+                    )
                 }
             }
         }
@@ -305,7 +300,8 @@ private fun PodSelectorRow(state: LogsUiState, vm: LogsViewModel) {
             horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            FilterChip(shape = RectangleShape, 
+            FilterChip(
+                shape = KubeShapes.Pill,
                 selected = state.allPods,
                 onClick = { vm.setAllPods(true) },
                 label = {
@@ -316,7 +312,8 @@ private fun PodSelectorRow(state: LogsUiState, vm: LogsViewModel) {
                 },
             )
             state.pods.forEach { pod ->
-                FilterChip(shape = RectangleShape, 
+                FilterChip(
+                    shape = KubeShapes.Pill,
                     selected = !state.allPods && state.selectedPod == pod.name,
                     onClick = { vm.setSelectedPod(pod.name) },
                     label = {
@@ -405,11 +402,7 @@ private fun LogOptionsSheet(
                     modifier = Modifier.padding(horizontal = Spacing.SheetPadding, vertical = Spacing.RowVertical),
                 )
             } else if (state.containers.size > 1) {
-                Text(
-                    text = stringResource(R.string.logs_container),
-                    style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.padding(horizontal = Spacing.SheetPadding, vertical = Spacing.RowVertical),
-                )
+                LogsSheetLabel(stringResource(R.string.logs_container))
                 androidx.compose.foundation.layout.FlowRow(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -417,7 +410,8 @@ private fun LogOptionsSheet(
                     horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
                 ) {
                     state.containers.forEach { container ->
-                        FilterChip(shape = RectangleShape, 
+                        FilterChip(
+                            shape = KubeShapes.Pill,
                             selected = state.container == container,
                             onClick = { onContainer(container) },
                             label = { Text(container, maxLines = 1) },
@@ -425,37 +419,61 @@ private fun LogOptionsSheet(
                     }
                 }
             }
-            Text(
-                text = stringResource(R.string.logs_tail_size),
-                style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier.padding(horizontal = Spacing.SheetPadding, vertical = Spacing.RowVertical),
-            )
+            LogsSheetLabel(stringResource(R.string.logs_tail_size))
             Row(
                 Modifier.padding(horizontal = Spacing.SheetPadding),
                 horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
             ) {
                 LOG_TAIL_OPTIONS.forEach { tail ->
-                    FilterChip(shape = RectangleShape, 
+                    FilterChip(
+                        shape = KubeShapes.Pill,
                         selected = state.tailLines == tail,
                         onClick = { onTail(tail) },
                         label = { Text(tail.toString()) },
                     )
                 }
             }
-            ListItem(
-                headlineContent = { Text(stringResource(R.string.label_timestamps)) },
-                trailingContent = { Switch(checked = state.timestamps, onCheckedChange = onTimestamps) },
-            )
-            ListItem(
-                headlineContent = { Text(stringResource(R.string.label_follow)) },
-                supportingContent = { SecondaryText(stringResource(R.string.logs_follow_hint)) },
-                trailingContent = { Switch(checked = state.follow, onCheckedChange = onFollow) },
-            )
-            ListItem(
-                headlineContent = { Text(stringResource(R.string.label_previous)) },
-                supportingContent = { SecondaryText(stringResource(R.string.logs_previous_hint)) },
-                trailingContent = { Switch(checked = state.previous, onCheckedChange = onPrevious) },
-            )
+            Spacer(Modifier.size(Spacing.ContentInset))
+            // The three stream toggles read as one settings group: a single rounded card with
+            // inset dividers, rather than three loose full-bleed rows.
+            val rowColors = ListItemDefaults.colors(containerColor = Color.Transparent)
+            ListGroup {
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.label_timestamps)) },
+                    trailingContent = { Switch(checked = state.timestamps, onCheckedChange = onTimestamps) },
+                    colors = rowColors,
+                )
+                ListDivider()
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.label_follow)) },
+                    supportingContent = { SecondaryText(stringResource(R.string.logs_follow_hint)) },
+                    trailingContent = { Switch(checked = state.follow, onCheckedChange = onFollow) },
+                    colors = rowColors,
+                )
+                ListDivider()
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.label_previous)) },
+                    supportingContent = { SecondaryText(stringResource(R.string.logs_previous_hint)) },
+                    trailingContent = { Switch(checked = state.previous, onCheckedChange = onPrevious) },
+                    colors = rowColors,
+                )
+            }
         }
     }
+}
+
+/** Sentence-case, muted label above a group of controls in an options sheet. */
+@Composable
+private fun LogsSheetLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(
+            start = Spacing.SheetPadding,
+            end = Spacing.SheetPadding,
+            top = Spacing.ItemGap,
+            bottom = Spacing.TightGap,
+        ),
+    )
 }

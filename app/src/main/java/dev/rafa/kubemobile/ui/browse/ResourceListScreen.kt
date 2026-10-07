@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -29,10 +28,10 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -52,6 +51,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -68,23 +68,28 @@ import dev.rafa.kubemobile.k8s.ApiResource
 import dev.rafa.kubemobile.k8s.ResourceUsage
 import dev.rafa.kubemobile.k8s.str
 import dev.rafa.kubemobile.ops.Status
+import dev.rafa.kubemobile.ui.KubeShapes
 import dev.rafa.kubemobile.ui.Spacing
+import dev.rafa.kubemobile.ui.cardGutter
 import dev.rafa.kubemobile.ui.ListBottomPadding
 import dev.rafa.kubemobile.ui.ALL_NAMESPACES
 import dev.rafa.kubemobile.ui.AppViewModel
 import dev.rafa.kubemobile.ui.Routes
-import dev.rafa.kubemobile.ui.components.ListDivider
 import dev.rafa.kubemobile.ui.components.ConfirmDeleteDialog
 import dev.rafa.kubemobile.ui.components.EmptyState
 import dev.rafa.kubemobile.ui.components.ErrorState
 import dev.rafa.kubemobile.ui.components.HealthChip
 import dev.rafa.kubemobile.ui.components.LoadingState
+import dev.rafa.kubemobile.ui.components.RowCard
 import dev.rafa.kubemobile.ui.components.SearchField
 import dev.rafa.kubemobile.ui.components.SecondaryText
+import dev.rafa.kubemobile.ui.components.softFieldColors
+import dev.rafa.kubemobile.ops.ResourceHealth
 import dev.rafa.kubemobile.ui.humanAge
 import dev.rafa.kubemobile.ui.usageLabel
 import dev.rafa.kubemobile.ui.parseResourceKey
 import dev.rafa.kubemobile.ui.screenViewModel
+import dev.rafa.kubemobile.ui.toneColors
 
 /** Kinds whose rows offer a scale action, and the confirm dialog that goes with it. */
 private val SCALABLE = setOf("Deployment", "StatefulSet", "ReplicaSet", "ReplicationController")
@@ -165,7 +170,7 @@ fun ResourceListScreen(
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp),
                             )
-                            Spacer(Modifier.size(4.dp))
+                            Spacer(Modifier.size(Spacing.TightGap))
                             Text(
                                 text = namespace ?: stringResource(R.string.list_all),
                                 maxLines = 1,
@@ -196,7 +201,6 @@ fun ResourceListScreen(
         floatingActionButton = {
             if (resource?.supports("create") == true) {
                 ExtendedFloatingActionButton(
-                    shape = RectangleShape,
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                     onClick = {
@@ -243,7 +247,7 @@ fun ResourceListScreen(
                 value = search,
                 onValueChange = vm::setSearch,
                 placeholder = stringResource(R.string.list_search_hint),
-                modifier = Modifier.padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.RowVertical),
+                modifier = Modifier.cardGutter(),
             )
 
             if (selectorOpen) {
@@ -257,6 +261,8 @@ fun ResourceListScreen(
                         .padding(horizontal = Spacing.ScreenPadding),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                    shape = KubeShapes.Field,
+                    colors = softFieldColors(),
                     trailingIcon = {
                         IconButton(onClick = vm::refresh) {
                             Icon(
@@ -269,34 +275,16 @@ fun ResourceListScreen(
             }
 
             if (state.partial) {
-                Surface(
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.RowVertical),
-                ) {
-                    Text(
-                        text = stringResource(R.string.list_partial),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.padding(horizontal = Spacing.ChipPadding, vertical = Spacing.TightGap),
-                    )
-                }
+                ListNotice(
+                    text = stringResource(R.string.list_partial),
+                    tone = ResourceHealth.Tone.PROGRESS,
+                )
             }
             if (resource?.kind == "Pod" && state.metricsError != null) {
-                Surface(
-                    color = MaterialTheme.colorScheme.errorContainer,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.RowVertical),
-                ) {
-                    Text(
-                        text = stringResource(R.string.metrics_request_failed, state.metricsError!!.message),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.padding(horizontal = Spacing.ChipPadding, vertical = Spacing.TightGap),
-                    )
-                }
+                ListNotice(
+                    text = stringResource(R.string.metrics_request_failed, state.metricsError!!.message),
+                    tone = ResourceHealth.Tone.BAD,
+                )
             }
 
             when {
@@ -341,7 +329,7 @@ fun ResourceListScreen(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     LazyColumn(
-                        contentPadding = PaddingValues(bottom = ListBottomPadding),
+                        contentPadding = PaddingValues(top = Spacing.TightGap, bottom = ListBottomPadding),
                         modifier = Modifier.fillMaxSize(),
                     ) {
                         items(state.rows, key = { it.uid }) { row ->
@@ -361,7 +349,6 @@ fun ResourceListScreen(
                                 },
                                 onLongPress = { overflowTarget = row },
                             )
-                            ListDivider()
                         }
                     }
                 }
@@ -576,6 +563,7 @@ private fun NamespaceOption(
         } else {
             null
         },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         modifier = Modifier.clickable(onClick = onClick),
     )
 }
@@ -585,9 +573,11 @@ private fun NamespaceOption(
 /* -------------------------------------------------------------------------------------------- */
 
 /**
- * The workload row. One line for the name, one line for `scope · readiness · age [· restarts]`, and
- * a trailing health chip carrying the rollout state. `ListItem` supplies the >=48 dp touch target
- * and grows with the system font scale, so nothing clips at the largest setting.
+ * The workload row, as one rounded card. One line for the name, one line for
+ * `scope · readiness · age [· restarts]`, and a trailing health pill carrying the rollout state.
+ * Tap opens the object; long-press or the overflow button opens the row's action sheet. `ListItem`
+ * supplies the >=48 dp touch target and grows with the system font scale, so nothing clips at the
+ * largest setting.
  */
 @Composable
 private fun ResourceListRow(
@@ -600,59 +590,82 @@ private fun ResourceListRow(
 ) {
     val health = remember(row.uid, kind) { Status.health(row.object_, kind) }
     val usageText = remember(usage) { usage?.let { usageLabel(it.cpuMillis, it.memoryBytes) } }
-    ListItem(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(end = Spacing.TightGap),
-        headlineContent = {
-            Text(
-                text = row.name,
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
-        supportingContent = {
-            SecondaryText(
-                text = buildList {
-                    if (showNamespace) row.namespace?.let { add(it) }
-                    // `Status.health` already folds readiness and restarts into its detail line;
-                    // appending them again here produced `2 restarts · ... · 2 restarts`.
-                    health.detail?.let { add(it) }
-                    humanAge(row.object_.str("metadata/creationTimestamp"))?.let { add(it) }
-                    // Usage last, so a narrow screen truncates the metric rather than readiness.
-                    usageText?.let { add(it) }
-                }.joinToString(" · "),
-                // Two lines only when there is a usage segment to fit, so plain rows stay compact
-                // and the metric is never the part that gets ellipsised away.
-                maxLines = if (usageText != null) 2 else 1,
-            )
-        },
-        leadingContent = if (health.progress != null && health.progress < 1f) {
-            {
-                CircularProgressIndicator(
-                    progress = { health.progress },
-                    modifier = Modifier.size(18.dp),
-                    strokeWidth = 2.dp,
+    RowCard(onClick = onClick, onLongClick = onLongPress) {
+        ListItem(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(end = Spacing.TightGap),
+            // Transparent so the card's raised surface shows through.
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            headlineContent = {
+                Text(
+                    text = row.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
-            }
-        } else {
-            null
-        },
-        trailingContent = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                HealthChip(health)
-                IconButton(onClick = onLongPress) {
-                    Icon(
-                        imageVector = Icons.Filled.MoreVert,
-                        contentDescription = stringResource(R.string.action_more),
+            },
+            supportingContent = {
+                SecondaryText(
+                    text = buildList {
+                        if (showNamespace) row.namespace?.let { add(it) }
+                        // `Status.health` already folds readiness and restarts into its detail line;
+                        // appending them again here produced `2 restarts · ... · 2 restarts`.
+                        health.detail?.let { add(it) }
+                        humanAge(row.object_.str("metadata/creationTimestamp"))?.let { add(it) }
+                        // Usage last, so a narrow screen truncates the metric rather than readiness.
+                        usageText?.let { add(it) }
+                    }.joinToString(" · "),
+                    // Two lines only when there is a usage segment to fit, so plain rows stay compact
+                    // and the metric is never the part that gets ellipsised away.
+                    maxLines = if (usageText != null) 2 else 1,
+                )
+            },
+            leadingContent = if (health.progress != null && health.progress < 1f) {
+                {
+                    CircularProgressIndicator(
+                        progress = { health.progress },
                         modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
                     )
                 }
-            }
-        },
-    )
+            } else {
+                null
+            },
+            trailingContent = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    HealthChip(health)
+                    IconButton(onClick = onLongPress) {
+                        Icon(
+                            imageVector = Icons.Filled.MoreVert,
+                            contentDescription = stringResource(R.string.action_more),
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                }
+            },
+        )
+    }
+}
+
+/** A soft rounded notice above the list (partial results, metrics failure), tinted by tone. */
+@Composable
+private fun ListNotice(text: String, tone: ResourceHealth.Tone) {
+    val colors = toneColors(tone)
+    Surface(
+        shape = KubeShapes.Field,
+        color = colors.container,
+        contentColor = colors.content,
+        modifier = Modifier
+            .fillMaxWidth()
+            .cardGutter(),
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier.padding(horizontal = Spacing.ChipPadding, vertical = Spacing.ItemGap),
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -678,7 +691,7 @@ private fun ListRowSheet(
                 listOfNotNull(kind, row.namespace).joinToString(" · "),
                 modifier = Modifier.padding(horizontal = Spacing.SheetPadding),
             )
-            Spacer(Modifier.size(8.dp))
+            Spacer(Modifier.size(Spacing.ItemGap))
             if (resource?.supports("get") == true) {
                 SheetAction(stringResource(R.string.label_summary), Icons.Filled.Tune, onClick = onOpen)
             }
@@ -714,7 +727,7 @@ private fun SheetAction(
                 color = if (destructive) {
                     MaterialTheme.colorScheme.error
                 } else {
-                    androidx.compose.ui.graphics.Color.Unspecified
+                    Color.Unspecified
                 },
             )
         },
@@ -729,6 +742,7 @@ private fun SheetAction(
                 },
             )
         },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         modifier = Modifier.clickable(onClick = onClick),
     )
 }
@@ -752,7 +766,7 @@ private fun ScaleDialog(
         text = {
             Column {
                 Text(stringResource(R.string.detail_scale_current, current))
-                Spacer(Modifier.size(12.dp))
+                Spacer(Modifier.size(Spacing.ChipPadding))
                 OutlinedTextField(
                     value = value,
                     onValueChange = { value = it.filter(Char::isDigit).take(5) },
@@ -761,6 +775,8 @@ private fun ScaleDialog(
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         keyboardType = KeyboardType.Number,
                     ),
+                    shape = KubeShapes.Field,
+                    colors = softFieldColors(),
                 )
             }
         },
@@ -818,6 +834,8 @@ private fun CreateDialog(
                             .padding(Spacing.CardPadding),
                         textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 13.sp),
                         label = { Text(stringResource(R.string.label_yaml)) },
+                        shape = KubeShapes.Field,
+                        colors = softFieldColors(),
                     )
                 }
             }

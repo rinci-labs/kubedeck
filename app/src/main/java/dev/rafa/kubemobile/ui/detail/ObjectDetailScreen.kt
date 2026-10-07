@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -28,16 +27,19 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.automirrored.filled.Article
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -57,6 +59,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -72,7 +76,9 @@ import dev.rafa.kubemobile.k8s.resourceName
 import dev.rafa.kubemobile.k8s.ResourceUsage
 import dev.rafa.kubemobile.k8s.str
 import dev.rafa.kubemobile.ops.Status
+import dev.rafa.kubemobile.ui.KubeShapes
 import dev.rafa.kubemobile.ui.Spacing
+import dev.rafa.kubemobile.ui.cardGutter
 import dev.rafa.kubemobile.ui.ListBottomPadding
 import dev.rafa.kubemobile.ui.AppViewModel
 import dev.rafa.kubemobile.ui.NO_NAMESPACE
@@ -81,16 +87,21 @@ import dev.rafa.kubemobile.ui.components.ConfirmDeleteDialog
 import dev.rafa.kubemobile.ui.components.EmptyState
 import dev.rafa.kubemobile.ui.components.ErrorState
 import dev.rafa.kubemobile.ui.components.HealthChip
+import dev.rafa.kubemobile.ui.components.IconTile
 import dev.rafa.kubemobile.ui.components.InfoChip
 import dev.rafa.kubemobile.ui.components.KeyValueRow
+import dev.rafa.kubemobile.ui.components.ListDivider
+import dev.rafa.kubemobile.ui.components.ListGroup
 import dev.rafa.kubemobile.ui.components.LoadingState
 import dev.rafa.kubemobile.ui.components.MenuAction
 import dev.rafa.kubemobile.ui.components.MonoText
 import dev.rafa.kubemobile.ui.components.OverflowMenu
+import dev.rafa.kubemobile.ui.components.RowCard
 import dev.rafa.kubemobile.ui.components.TabStrip
 import dev.rafa.kubemobile.ui.components.SecondaryText
 import dev.rafa.kubemobile.ui.components.SectionCard
 import dev.rafa.kubemobile.ui.components.SectionHeader
+import dev.rafa.kubemobile.ui.components.softFieldColors
 import dev.rafa.kubemobile.ui.copyToClipboard
 import dev.rafa.kubemobile.ui.fullTimestamp
 import dev.rafa.kubemobile.ui.formatCpu
@@ -103,6 +114,8 @@ import dev.rafa.kubemobile.ui.screenViewModel
 private val SCALABLE = setOf("Deployment", "StatefulSet", "ReplicaSet", "ReplicationController")
 private val RESTARTABLE = setOf("Deployment", "StatefulSet", "DaemonSet")
 private val TYPED_CONFIRM = setOf("Secret", "PersistentVolumeClaim", "PersistentVolume", "Namespace")
+
+/** SectionCard is full-width by design; detail cards sit one screen gutter in with an 8 dp rhythm. */
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -283,7 +296,7 @@ fun ObjectDetailScreen(
                             tabs = tabs.map { stringResource(it.labelRes()) },
                             selectedIndex = tabs.indexOf(selected),
                             onSelect = { index -> tab = tabs.getOrElse(index) { DetailTab.SUMMARY } },
-                            modifier = Modifier.padding(horizontal = Spacing.TightGap),
+                            modifier = Modifier.padding(horizontal = Spacing.ScreenPadding),
                         )
                         when (selected) {
                             DetailTab.SUMMARY -> SummaryTab(
@@ -634,7 +647,7 @@ private fun HeaderStrip(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             health?.let { HealthChip(it) }
-            Spacer(Modifier.size(8.dp))
+            Spacer(Modifier.size(Spacing.ItemGap))
             SecondaryText(
                 listOfNotNull(
                     created?.let { humanAge(it) },
@@ -644,7 +657,7 @@ private fun HeaderStrip(
             )
         }
         health?.detail?.let { detail ->
-            Spacer(Modifier.size(4.dp))
+            Spacer(Modifier.size(Spacing.TightGap))
             SecondaryText(detail, maxLines = 3)
         }
         health?.progress?.let { progress ->
@@ -682,14 +695,14 @@ private fun SummaryTab(
     LazyColumn(contentPadding = PaddingValues(bottom = ListBottomPadding)) {
         if (rows.isNotEmpty()) {
             item {
-                SectionCard(title = stringResource(R.string.label_status)) {
+                SectionCard(title = stringResource(R.string.label_status), modifier = Modifier.cardGutter()) {
                     rows.forEach { row -> KeyValueRow(row.label, row.value, copyable = true) }
                 }
             }
         }
         if (vm.isPod) {
             item {
-                SectionCard(title = stringResource(R.string.label_usage)) {
+                SectionCard(title = stringResource(R.string.label_usage), modifier = Modifier.cardGutter()) {
                     val cpu = usage?.cpuMillis
                     val memory = usage?.memoryBytes
                     if (cpu != null || memory != null) {
@@ -715,12 +728,12 @@ private fun SummaryTab(
         if (kind == "Node") {
             if (allocatable.isNotEmpty() || capacity.isNotEmpty()) {
                 item {
-                    SectionCard(title = stringResource(R.string.node_allocatable)) {
+                    SectionCard(title = stringResource(R.string.node_allocatable), modifier = Modifier.cardGutter()) {
                         allocatable.forEach { (k, v) -> KeyValueRow(k, v, copyable = true) }
                     }
                 }
                 item {
-                    SectionCard(title = stringResource(R.string.node_capacity)) {
+                    SectionCard(title = stringResource(R.string.node_capacity), modifier = Modifier.cardGutter()) {
                         capacity.forEach { (k, v) -> KeyValueRow(k, v, copyable = true) }
                         SecondaryText(
                             text = stringResource(R.string.node_usage_unavailable),
@@ -731,7 +744,7 @@ private fun SummaryTab(
             }
         }
         item {
-            SectionCard(title = stringResource(R.string.label_metadata)) {
+            SectionCard(title = stringResource(R.string.label_metadata), modifier = Modifier.cardGutter()) {
                 KeyValueRow(stringResource(R.string.label_name), document.resourceName(), copyable = true)
                 document.str("metadata/namespace")?.let {
                     KeyValueRow(stringResource(R.string.label_namespace), it, copyable = true)
@@ -760,81 +773,105 @@ private fun SummaryTab(
                 }
             }
         }
+        item { SectionHeader(stringResource(R.string.label_conditions)) }
         if (conditions.isNotEmpty()) {
-            item { SectionHeader(stringResource(R.string.label_conditions)) }
-            items(conditions) { condition ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = Spacing.CardPadding, vertical = Spacing.RowVertical),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (condition.isFalse) {
-                            MaterialTheme.colorScheme.errorContainer
-                        } else {
-                            MaterialTheme.colorScheme.surfaceContainerHigh
-                        },
-                    ),
-                ) {
-                    Column(Modifier.padding(Spacing.CardPadding)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = condition.type,
-                                style = MaterialTheme.typography.titleSmall,
-                                modifier = Modifier.weight(1f),
-                            )
-                            Text(
-                                text = condition.status,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = if (condition.isFalse) {
-                                    MaterialTheme.colorScheme.error
+            // One rounded group with inset dividers; the status pill carries the tone, so a False
+            // condition stands out without turning the whole block red.
+            item {
+                ListGroup(Modifier.padding(vertical = Spacing.RowVertical)) {
+                    conditions.forEachIndexed { index, condition ->
+                        if (index > 0) ListDivider()
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = Spacing.CardPadding, vertical = Spacing.ChipPadding),
+                            verticalAlignment = Alignment.Top,
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    text = condition.type,
+                                    style = MaterialTheme.typography.titleSmall,
+                                )
+                                if (condition.reason.isNotBlank()) {
+                                    Spacer(Modifier.size(2.dp))
+                                    SecondaryText(condition.reason)
+                                }
+                                if (condition.message.isNotBlank()) {
+                                    Spacer(Modifier.size(Spacing.TightGap))
+                                    Text(condition.message, style = MaterialTheme.typography.bodySmall)
+                                }
+                                if (condition.lastTransitionTime.isNotBlank()) {
+                                    Spacer(Modifier.size(Spacing.TightGap))
+                                    SecondaryText(
+                                        listOfNotNull(
+                                            humanAge(condition.lastTransitionTime),
+                                            condition.observedGeneration?.let { "observed gen $it" },
+                                        ).joinToString(" · "),
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.size(Spacing.ItemGap))
+                            InfoChip(
+                                label = condition.status,
+                                tone = if (condition.isFalse) {
+                                    dev.rafa.kubemobile.ops.ResourceHealth.Tone.BAD
                                 } else {
-                                    MaterialTheme.colorScheme.primary
+                                    dev.rafa.kubemobile.ops.ResourceHealth.Tone.OK
                                 },
-                            )
-                        }
-                        if (condition.reason.isNotBlank()) {
-                            Spacer(Modifier.size(4.dp))
-                            SecondaryText(condition.reason)
-                        }
-                        if (condition.message.isNotBlank()) {
-                            Spacer(Modifier.size(4.dp))
-                            Text(condition.message, style = MaterialTheme.typography.bodySmall)
-                        }
-                        if (condition.lastTransitionTime.isNotBlank()) {
-                            Spacer(Modifier.size(4.dp))
-                            SecondaryText(
-                                listOfNotNull(
-                                    humanAge(condition.lastTransitionTime),
-                                    condition.observedGeneration?.let { "observed gen $it" },
-                                ).joinToString(" · "),
                             )
                         }
                     }
                 }
             }
         } else {
-            item { SecondaryText(stringResource(R.string.detail_conditions_empty)) }
+            item {
+                SecondaryText(
+                    text = stringResource(R.string.detail_conditions_empty),
+                    modifier = Modifier.padding(horizontal = Spacing.ScreenPadding),
+                )
+            }
         }
         if (labels.isNotEmpty()) {
-            item { SectionHeader(stringResource(R.string.label_labels)) }
-            items(labels) { (key, value) ->
-                KeyValueRow(key, value, copyable = true, monospace = true)
+            item {
+                SectionCard(
+                    title = stringResource(R.string.label_labels),
+                    modifier = Modifier.cardGutter().padding(top = Spacing.ItemGap),
+                ) {
+                    labels.forEach { (key, value) ->
+                        KeyValueRow(key, value, copyable = true, monospace = true)
+                    }
+                }
             }
         }
         if (annotations.isNotEmpty()) {
             item {
-                SectionHeader(
-                    stringResource(R.string.label_annotations),
-                    modifier = Modifier.clickable {
-                        context.copyToClipboard(
-                            "annotations",
-                            annotations.joinToString("\n") { (k, v) -> "$k: $v" },
-                        )
+                val annotationsLabel = stringResource(R.string.label_annotations)
+                SectionCard(
+                    title = annotationsLabel,
+                    modifier = Modifier.cardGutter().padding(top = Spacing.ItemGap),
+                    trailing = {
+                        // Copies every annotation at once, as `key: value` lines.
+                        IconButton(
+                            onClick = {
+                                context.copyToClipboard(
+                                    "annotations",
+                                    annotations.joinToString("\n") { (k, v) -> "$k: $v" },
+                                )
+                            },
+                            modifier = Modifier.size(32.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.ContentCopy,
+                                contentDescription = stringResource(R.string.action_copy_named, annotationsLabel),
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
                     },
-                )
-            }
-            items(annotations) { (key, value) ->
-                KeyValueRow(key, value, copyable = true, monospace = true)
+                ) {
+                    annotations.forEach { (key, value) ->
+                        KeyValueRow(key, value, copyable = true, monospace = true)
+                    }
+                }
             }
         }
     }
@@ -852,19 +889,24 @@ private fun YamlTab(
     onApply: () -> Unit,
 ) {
     val context = LocalContext.current
-    Column(Modifier.fillMaxSize().padding(horizontal = Spacing.ScreenPadding)) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(start = Spacing.ScreenPadding, end = Spacing.ScreenPadding, bottom = Spacing.ScreenPadding),
+    ) {
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (!editing) {
-                OutlinedButton(shape = RectangleShape, onClick = onEdit) {
+                // Edit is the primary move on this tab; copy and share stay secondary.
+                FilledTonalButton(onClick = onEdit) {
                     Icon(Icons.Filled.Edit, contentDescription = null, Modifier.size(16.dp))
                     Spacer(Modifier.size(6.dp))
                     Text(stringResource(R.string.detail_edit))
                 }
-                OutlinedButton(shape = RectangleShape, onClick = {
+                OutlinedButton(onClick = {
                     context.copyToClipboard("yaml", yaml)
                 }) {
                     Icon(Icons.Filled.ContentCopy, contentDescription = null, Modifier.size(16.dp))
@@ -880,10 +922,10 @@ private fun YamlTab(
                     )
                 }
             } else {
-                Button(shape = RectangleShape, onClick = onApply, enabled = dirty) {
+                Button(onClick = onApply, enabled = dirty) {
                     Text(stringResource(R.string.action_apply))
                 }
-                OutlinedButton(shape = RectangleShape, onClick = onCancel) { Text(stringResource(R.string.action_cancel)) }
+                OutlinedButton(onClick = onCancel) { Text(stringResource(R.string.action_cancel)) }
                 IconButton(onClick = onRefresh) {
                     Icon(
                         imageVector = Icons.Filled.Refresh,
@@ -892,7 +934,7 @@ private fun YamlTab(
                 }
             }
         }
-        Spacer(Modifier.size(8.dp))
+        Spacer(Modifier.size(Spacing.ItemGap))
         if (editing) {
             OutlinedTextField(
                 value = yaml,
@@ -900,21 +942,25 @@ private fun YamlTab(
                 modifier = Modifier.fillMaxSize(),
                 textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 12.sp),
                 label = { Text(stringResource(R.string.label_yaml)) },
+                shape = KubeShapes.Field,
+                colors = softFieldColors(),
             )
         } else {
             SecondaryText(stringResource(R.string.detail_yaml_readonly))
-            Spacer(Modifier.size(8.dp))
+            Spacer(Modifier.size(Spacing.ItemGap))
             Surface(
+                shape = KubeShapes.Field,
                 color = MaterialTheme.colorScheme.surfaceContainerLow,
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 modifier = Modifier.fillMaxSize(),
             ) {
                 SelectionContainer {
                     Column(
                         Modifier
                             .verticalScroll(rememberScrollState())
-                            .padding(Spacing.ItemGap),
+                            .padding(Spacing.ChipPadding),
                     ) {
-                        // The only horizontal scroller in the app, and only for YAML.
+                        // Long lines scroll sideways instead of wrapping, so YAML indentation stays legible.
                         Box(Modifier.horizontalScroll(rememberScrollState())) {
                             MonoText(yaml, fontSize = 11.sp)
                         }
@@ -956,7 +1002,8 @@ fun EventCard(event: kotlinx.serialization.json.JsonObject, showObject: Boolean 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.RowVertical),
+            .cardGutter(),
+        shape = KubeShapes.Card,
         colors = CardDefaults.cardColors(
             containerColor = if (warning) {
                 MaterialTheme.colorScheme.errorContainer
@@ -968,7 +1015,7 @@ fun EventCard(event: kotlinx.serialization.json.JsonObject, showObject: Boolean 
         border = androidx.compose.foundation.BorderStroke(
             1.dp,
             if (warning) {
-                MaterialTheme.colorScheme.error.copy(alpha = 0.5f)
+                MaterialTheme.colorScheme.error.copy(alpha = 0.25f)
             } else {
                 MaterialTheme.colorScheme.outlineVariant
             },
@@ -995,10 +1042,10 @@ fun EventCard(event: kotlinx.serialization.json.JsonObject, showObject: Boolean 
                 )
             }
             if (!event.str("message").isNullOrBlank()) {
-                Spacer(Modifier.size(4.dp))
+                Spacer(Modifier.size(Spacing.TightGap))
                 Text(event.str("message").orEmpty(), style = MaterialTheme.typography.bodySmall)
             }
-            Spacer(Modifier.size(4.dp))
+            Spacer(Modifier.size(Spacing.TightGap))
             SecondaryText(
                 listOfNotNull(
                     event.long("count")?.takeIf { it > 1 }?.let { "×$it" },
@@ -1025,39 +1072,40 @@ private fun ContainersTab(
     }
     LazyColumn(contentPadding = PaddingValues(bottom = ListBottomPadding)) {
         items(containers, key = { it.name }) { container ->
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.RowVertical),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    MaterialTheme.colorScheme.outlineVariant,
-                ),
-            ) {
+            val running = container.state == "Running"
+            RowCard {
                 Column(Modifier.padding(Spacing.CardPadding)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconTile(
+                            icon = Icons.Filled.Terminal,
+                            tone = if (running) {
+                                dev.rafa.kubemobile.ops.ResourceHealth.Tone.OK
+                            } else {
+                                dev.rafa.kubemobile.ops.ResourceHealth.Tone.BAD
+                            },
+                            size = 36.dp,
+                        )
+                        Spacer(Modifier.size(Spacing.ChipPadding))
                         Text(
                             text = container.name,
                             style = MaterialTheme.typography.titleSmall,
                             modifier = Modifier.weight(1f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
-                        Text(
-                            text = container.state,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = if (container.state == "Running") {
-                                MaterialTheme.colorScheme.primary
+                        Spacer(Modifier.size(Spacing.ItemGap))
+                        InfoChip(
+                            label = container.state,
+                            tone = if (running) {
+                                dev.rafa.kubemobile.ops.ResourceHealth.Tone.OK
                             } else {
-                                MaterialTheme.colorScheme.error
+                                dev.rafa.kubemobile.ops.ResourceHealth.Tone.BAD
                             },
                         )
                     }
-                    Spacer(Modifier.size(4.dp))
+                    Spacer(Modifier.size(Spacing.TightGap))
                     MonoText(container.image, fontSize = 11.sp)
-                    Spacer(Modifier.size(4.dp))
+                    Spacer(Modifier.size(Spacing.TightGap))
                     SecondaryText(
                         listOfNotNull(
                             if (container.ready) "ready" else "not ready",
@@ -1066,17 +1114,17 @@ private fun ContainersTab(
                         ).joinToString(" · "),
                     )
                     container.stateDetail?.let {
-                        Spacer(Modifier.size(4.dp))
+                        Spacer(Modifier.size(Spacing.TightGap))
                         Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
                     }
-                    Spacer(Modifier.size(8.dp))
+                    Spacer(Modifier.size(Spacing.ItemGap))
                     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap)) {
-                        OutlinedButton(shape = RectangleShape, onClick = { onLogs(container.name) }) {
+                        OutlinedButton(onClick = { onLogs(container.name) }) {
                             Icon(Icons.AutoMirrored.Filled.Article, contentDescription = null, Modifier.size(16.dp))
                             Spacer(Modifier.size(6.dp))
                             Text(stringResource(R.string.action_logs))
                         }
-                        OutlinedButton(shape = RectangleShape, onClick = { onShell(container.name) }) {
+                        OutlinedButton(onClick = { onShell(container.name) }) {
                             Icon(Icons.Filled.Terminal, contentDescription = null, Modifier.size(16.dp))
                             Spacer(Modifier.size(6.dp))
                             Text(stringResource(R.string.action_shell))
@@ -1127,18 +1175,7 @@ private fun PodRow(
 ) {
     val statuses = pod.hasStatuses
     val healthy = statuses && pod.ready == pod.total
-    Card(
-        onClick = onOpen,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.RowVertical),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.outlineVariant,
-        ),
-    ) {
+    RowCard(onClick = onOpen) {
         Column(Modifier.padding(Spacing.CardPadding)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -1161,7 +1198,7 @@ private fun PodRow(
                     },
                 )
             }
-            Spacer(Modifier.size(4.dp))
+            Spacer(Modifier.size(Spacing.TightGap))
             if (statuses) {
                 SecondaryText(
                     listOfNotNull(
@@ -1183,14 +1220,14 @@ private fun PodRow(
                     maxLines = 2,
                 )
             }
-            Spacer(Modifier.size(8.dp))
+            Spacer(Modifier.size(Spacing.ItemGap))
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap)) {
-                OutlinedButton(shape = RectangleShape, onClick = onLogs, contentPadding = PaddingValues(horizontal = Spacing.ChipPadding)) {
+                OutlinedButton(onClick = onLogs, contentPadding = PaddingValues(horizontal = Spacing.ChipPadding)) {
                     Icon(Icons.AutoMirrored.Filled.Article, contentDescription = null, Modifier.size(16.dp))
                     Spacer(Modifier.size(6.dp))
                     Text(stringResource(R.string.action_logs))
                 }
-                OutlinedButton(shape = RectangleShape, onClick = onShell, contentPadding = PaddingValues(horizontal = Spacing.ChipPadding)) {
+                OutlinedButton(onClick = onShell, contentPadding = PaddingValues(horizontal = Spacing.ChipPadding)) {
                     Icon(Icons.Filled.Terminal, contentDescription = null, Modifier.size(16.dp))
                     Spacer(Modifier.size(6.dp))
                     Text(stringResource(R.string.action_shell))
@@ -1230,26 +1267,9 @@ private fun ReplicaSetsTab(
 
 @Composable
 private fun ReplicaSetRowCard(row: ReplicaSetRow, onOpen: () -> Unit) {
-    // The current revision is marked with a tinted container and a chip; older ones stay quiet so
-    // the eye lands on what is live now.
-    Card(
-        onClick = onOpen,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.RowVertical),
-        colors = CardDefaults.cardColors(
-            containerColor = if (row.currentRevision) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceContainerLow
-            },
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.outlineVariant,
-        ),
-    ) {
+    // The current revision is marked with a mint outline and a chip; older ones stay quiet so the
+    // eye lands on what is live now.
+    RowCard(onClick = onOpen, highlighted = row.currentRevision) {
         Column(Modifier.padding(Spacing.CardPadding)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -1264,19 +1284,19 @@ private fun ReplicaSetRowCard(row: ReplicaSetRow, onOpen: () -> Unit) {
                     )
                 }
             }
-            Spacer(Modifier.size(4.dp))
+            Spacer(Modifier.size(Spacing.TightGap))
             Text(
                 text = row.name,
                 style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 color = if (row.currentRevision) {
-                    MaterialTheme.colorScheme.onPrimaryContainer
+                    MaterialTheme.colorScheme.onSurface
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 },
             )
-            Spacer(Modifier.size(4.dp))
+            Spacer(Modifier.size(Spacing.TightGap))
             SecondaryText(
                 listOfNotNull(
                     stringResource(R.string.detail_replicaset_replicas, row.desired, row.current, row.ready),
@@ -1285,7 +1305,7 @@ private fun ReplicaSetRowCard(row: ReplicaSetRow, onOpen: () -> Unit) {
                 maxLines = 2,
             )
             row.image?.let {
-                Spacer(Modifier.size(4.dp))
+                Spacer(Modifier.size(Spacing.TightGap))
                 MonoText(it, fontSize = 11.sp)
             }
         }
@@ -1314,15 +1334,7 @@ private fun JobsTab(
 
         else -> LazyColumn(contentPadding = PaddingValues(bottom = ListBottomPadding)) {
             items(jobs, key = { it.name }) { job ->
-                Card(
-                    onClick = { onOpen(job) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.RowVertical),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    ),
-                ) {
+                RowCard(onClick = { onOpen(job) }) {
                     Column(Modifier.padding(Spacing.CardPadding)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
@@ -1348,7 +1360,7 @@ private fun JobsTab(
                                 },
                             )
                         }
-                        Spacer(Modifier.size(4.dp))
+                        Spacer(Modifier.size(Spacing.TightGap))
                         SecondaryText(
                             listOfNotNull(
                                 stringResource(R.string.label_active) + " ${job.active}",
@@ -1387,7 +1399,7 @@ private fun ControllerTab(vm: ObjectDetailViewModel, navController: NavControlle
     LazyColumn(contentPadding = PaddingValues(bottom = ListBottomPadding)) {
         if (controllerRows.isNotEmpty()) {
             item {
-                SectionCard(title = stringResource(R.string.label_controller_spec)) {
+                SectionCard(title = stringResource(R.string.label_controller_spec), modifier = Modifier.cardGutter()) {
                     controllerRows.forEach { (labelText, value) ->
                         KeyValueRow(labelText, value, copyable = true)
                     }
@@ -1396,46 +1408,71 @@ private fun ControllerTab(vm: ObjectDetailViewModel, navController: NavControlle
         }
         if (owners.isNotEmpty()) {
             item { SectionHeader(stringResource(R.string.label_owner)) }
-            items(owners) { (ownerKind, ownerName, controller) ->
-                val ownerResource = vm.ownerResource(ownerKind)
-                ListItem(
-                    headlineContent = { Text(ownerName) },
-                    supportingContent = {
-                        SecondaryText(
-                            listOfNotNull(
-                                ownerKind,
-                                if (controller) stringResource(R.string.detail_owner_controller) else null,
-                            ).joinToString(" · "),
+            item {
+                // Owners share one rounded group; a row is tappable (and shows a chevron) only when
+                // the owner's kind is served by this cluster.
+                ListGroup(Modifier.padding(vertical = Spacing.RowVertical)) {
+                    owners.forEachIndexed { index, (ownerKind, ownerName, controller) ->
+                        if (index > 0) ListDivider()
+                        val ownerResource = vm.ownerResource(ownerKind)
+                        ListItem(
+                            headlineContent = {
+                                Text(ownerName, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            },
+                            supportingContent = {
+                                SecondaryText(
+                                    listOfNotNull(
+                                        ownerKind,
+                                        if (controller) stringResource(R.string.detail_owner_controller) else null,
+                                    ).joinToString(" · "),
+                                )
+                            },
+                            leadingContent = {
+                                IconTile(icon = Icons.Filled.AccountTree, size = 36.dp)
+                            },
+                            trailingContent = if (ownerResource != null) {
+                                {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            } else {
+                                null
+                            },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                            modifier = if (ownerResource != null) {
+                                Modifier.clickable {
+                                    navController.navigate(
+                                        Routes.objectDetail(
+                                            ownerResource.routeKey(),
+                                            vm.ownerNamespace() ?: NO_NAMESPACE,
+                                            ownerName,
+                                        ),
+                                    )
+                                }
+                            } else {
+                                Modifier
+                            },
                         )
-                    },
-                    leadingContent = {
-                        Icon(Icons.Filled.AccountTree, contentDescription = null)
-                    },
-                    modifier = if (ownerResource != null) {
-                        Modifier.clickable {
-                            navController.navigate(
-                                Routes.objectDetail(
-                                    ownerResource.routeKey(),
-                                    vm.ownerNamespace() ?: NO_NAMESPACE,
-                                    ownerName,
-                                ),
-                            )
-                        }
-                    } else {
-                        Modifier
-                    },
-                )
+                    }
+                }
             }
         }
         createdBy?.let { annotation ->
-            item { SectionHeader(stringResource(R.string.label_created_by)) }
             item {
-                KeyValueRow(
-                    stringResource(R.string.label_created_by),
-                    annotation,
-                    copyable = true,
-                    monospace = true,
-                )
+                SectionCard(
+                    title = stringResource(R.string.label_created_by),
+                    modifier = Modifier.cardGutter().padding(top = Spacing.ItemGap),
+                ) {
+                    KeyValueRow(
+                        stringResource(R.string.label_created_by),
+                        annotation,
+                        copyable = true,
+                        monospace = true,
+                    )
+                }
             }
         }
     }
@@ -1458,7 +1495,7 @@ private fun DrainDialog(
         text = {
             Column {
                 Text(stringResource(R.string.drain_body))
-                Spacer(Modifier.size(12.dp))
+                Spacer(Modifier.size(Spacing.ChipPadding))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = stringResource(R.string.drain_include_daemonsets),
@@ -1496,7 +1533,7 @@ private fun RevisionPickerDialog(
             if (revisions.isEmpty()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                    Spacer(Modifier.size(12.dp))
+                    Spacer(Modifier.size(Spacing.ChipPadding))
                     Text(stringResource(R.string.state_loading))
                 }
             } else {
@@ -1505,7 +1542,10 @@ private fun RevisionPickerDialog(
                         ListItem(
                             headlineContent = { Text(stringResource(R.string.action_rollout_undo)) },
                             supportingContent = { SecondaryText(stringResource(R.string.detail_previous_revision)) },
-                            modifier = Modifier.clickable { onPick(null) },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                            modifier = Modifier
+                                .clip(KubeShapes.Field)
+                                .clickable { onPick(null) },
                         )
                     }
                     items(revisions) { option ->
@@ -1518,7 +1558,10 @@ private fun RevisionPickerDialog(
                                     listOfNotNull(option.replicaSet, option.age).joinToString(" · "),
                                 )
                             },
-                            modifier = Modifier.clickable { onPick(option.revision) },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                            modifier = Modifier
+                                .clip(KubeShapes.Field)
+                                .clickable { onPick(option.revision) },
                         )
                     }
                 }
@@ -1550,8 +1593,10 @@ private fun ArgoSyncDialog(
                     label = { Text(stringResource(R.string.detail_argo_revision_hint)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
+                    shape = KubeShapes.Field,
+                    colors = softFieldColors(),
                 )
-                Spacer(Modifier.size(8.dp))
+                Spacer(Modifier.size(Spacing.ItemGap))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.detail_argo_prune), Modifier.weight(1f))
                     Switch(checked = prune, onCheckedChange = { prune = it })
@@ -1588,7 +1633,7 @@ private fun ScaleDialog(
         text = {
             Column {
                 Text(stringResource(R.string.detail_scale_current, current))
-                Spacer(Modifier.size(12.dp))
+                Spacer(Modifier.size(Spacing.ChipPadding))
                 OutlinedTextField(
                     value = value,
                     onValueChange = { value = it.filter(Char::isDigit).take(5) },
@@ -1597,6 +1642,9 @@ private fun ScaleDialog(
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         keyboardType = androidx.compose.ui.text.input.KeyboardType.Number,
                     ),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = KubeShapes.Field,
+                    colors = softFieldColors(),
                 )
             }
         },

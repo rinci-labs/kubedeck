@@ -14,7 +14,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import dev.rafa.kubemobile.ui.KubeShapes
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -65,6 +76,7 @@ import androidx.compose.ui.unit.sp
 import dev.rafa.kubemobile.R
 import dev.rafa.kubemobile.ops.ResourceHealth
 import dev.rafa.kubemobile.ui.Spacing
+import dev.rafa.kubemobile.ui.cardGutter
 import dev.rafa.kubemobile.ui.UiError
 import dev.rafa.kubemobile.ui.BottomBarScreenInsets
 import dev.rafa.kubemobile.ui.copyToClipboard
@@ -115,15 +127,14 @@ fun HealthChip(
     val progress = health.progress ?: overallProgress
     Surface(
         modifier = modifier,
-        shape = RectangleShape,
+        shape = KubeShapes.Pill,
         color = colors.container,
         contentColor = colors.content,
-        border = BorderStroke(1.dp, colors.content.copy(alpha = 0.35f)),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.TightGap),
-            modifier = Modifier.padding(horizontal = Spacing.ChipPadding, vertical = Spacing.TightGap),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
         ) {
             when {
                 // A measurable ratio is the most informative: it shows how much is left to roll.
@@ -160,7 +171,7 @@ fun ToneDot(tone: ResourceHealth.Tone, size: androidx.compose.ui.unit.Dp = 8.dp)
     Box(
         modifier = Modifier
             .size(size)
-            .background(toneColors(tone).content, RectangleShape),
+            .background(toneColors(tone).content, CircleShape),
     )
 }
 
@@ -211,10 +222,10 @@ fun EmptyState(
             Spacer(Modifier.size(Spacing.ContentInset))
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap)) {
                 if (secondaryActionLabel != null && onSecondaryAction != null) {
-                    OutlinedButton(shape = RectangleShape, onClick = onSecondaryAction) { Text(secondaryActionLabel) }
+                    OutlinedButton(onClick = onSecondaryAction) { Text(secondaryActionLabel) }
                 }
                 if (actionLabel != null && onAction != null) {
-                    Button(shape = RectangleShape, onClick = onAction) { Text(actionLabel) }
+                    Button(onClick = onAction) { Text(actionLabel) }
                 }
             }
         }
@@ -235,6 +246,12 @@ fun ErrorState(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        IconTile(
+            icon = Icons.Outlined.ErrorOutline,
+            tone = ResourceHealth.Tone.BAD,
+            size = 48.dp,
+        )
+        Spacer(Modifier.size(Spacing.ContentInset))
         Text(
             text = stringResource(error.titleRes),
             style = MaterialTheme.typography.titleMedium,
@@ -249,7 +266,7 @@ fun ErrorState(
         )
         if (onRetry != null) {
             Spacer(Modifier.size(Spacing.ContentInset))
-            TextButton(onClick = onRetry) { Text(stringResource(R.string.action_retry)) }
+            FilledTonalButton(onClick = onRetry) { Text(stringResource(R.string.action_retry)) }
         }
     }
 }
@@ -264,15 +281,16 @@ fun SectionErrorCard(
     onRetry: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
-    // Full-bleed like SectionCard, so the inner gutter is the only inset and the text lines up
-    // with every other row at 16 dp rather than at 16 + a nested card inset.
+    // Like SectionCard it owns no horizontal gutter: callers place it inside their own 16 dp inset
+    // so it lines up with the cards around it.
     Card(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = Spacing.RowVertical),
+        shape = KubeShapes.Card,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.25f)),
     ) {
         Column(Modifier.padding(Spacing.CardPadding)) {
             Text(
@@ -324,17 +342,16 @@ fun InfoChip(
     val colors = toneColors(tone)
     Surface(
         modifier = modifier,
-        shape = RectangleShape,
+        shape = KubeShapes.Pill,
         color = colors.container,
         contentColor = colors.content,
-        border = BorderStroke(1.dp, colors.content.copy(alpha = 0.35f)),
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = Spacing.ItemGap, vertical = Spacing.TightGap),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = Spacing.TightGap),
         )
     }
 }
@@ -352,6 +369,7 @@ fun SectionCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
+        shape = KubeShapes.Card,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
@@ -425,22 +443,12 @@ fun KeyValueRow(
 
 /**
  * The one tab strip: every multi-section surface in the app uses it — object detail, Helm release
- * and GitOps all render through here, so their tab rows are identical by construction rather than
- * by two implementations happening to agree.
+ * and GitOps all render through here, so their tab rows are identical by construction.
  *
- * The strip chooses its own layout from the space available:
- *
- * - When every label fits, tabs are laid out by [PrimaryTabRow], which divides the width evenly and
- *   gives a wide, flat strip.
- * - When they do not — object detail can carry eight tabs — [PrimaryScrollableTabRow] takes over and
- *   scrolls the selection back into view.
- *
- * Both halves are the same Material 3 primitive, so the tab height, indicator, label typography and
- * content colours are the same in either mode. Fit is decided by measuring the real labels at the
- * current font scale, so a large accessibility font switches to the scrolling layout instead of
- * clipping text.
+ * Tabs are pills, matching the landing site's segmented nav: the selected tab sits on the soft mint
+ * wash, the rest are quiet outlined text. The row scrolls horizontally, so eight object-detail tabs
+ * or a large accessibility font never clip a label.
  */
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun TabStrip(
     tabs: List<String>,
@@ -450,67 +458,177 @@ fun TabStrip(
 ) {
     if (tabs.isEmpty()) return
     val selected = selectedIndex.coerceIn(0, tabs.lastIndex)
-    val textStyle = MaterialTheme.typography.titleSmall
-
-    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-        val density = LocalDensity.current
-        val measurer = rememberTextMeasurer()
-        val availablePx = with(density) { maxWidth.toPx() }
-        // Material's own tab places 16 dp of padding either side of the label; the row keeps a
-        // chip-sized gutter at each end. Both come from the shared scale.
-        val labelPx = with(density) { (Spacing.RowPadding * 2).toPx() }
-        val fitsEvenly = remember(tabs, availablePx, textStyle, labelPx) {
-            var needed = 0f
-            for (text in tabs) {
-                needed += measurer.measure(AnnotatedString(text), textStyle).size.width + labelPx
-            }
-            needed <= availablePx
-        }
-
-        val label: @Composable (String) -> Unit = { text ->
-            Text(
-                text = text,
-                maxLines = 1,
-                softWrap = false,
-                style = textStyle,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-
-        if (fitsEvenly) {
-            PrimaryTabRow(
-                selectedTabIndex = selected,
-                modifier = Modifier.fillMaxWidth(),
-                containerColor = Color.Transparent,
-                divider = {},
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(vertical = Spacing.ItemGap),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        tabs.forEachIndexed { index, text ->
+            val isSelected = index == selected
+            Surface(
+                shape = KubeShapes.Pill,
+                color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                contentColor = if (isSelected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                border = if (isSelected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                modifier = Modifier
+                    .clip(KubeShapes.Pill)
+                    .clickable(role = Role.Tab) { onSelect(index) },
             ) {
-                tabs.forEachIndexed { index, text ->
-                    Tab(
-                        selected = index == selected,
-                        onClick = { onSelect(index) },
-                        text = { label(text) },
-                        selectedContentColor = MaterialTheme.colorScheme.primary,
-                        unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                Text(
+                    text = text,
+                    maxLines = 1,
+                    softWrap = false,
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                )
             }
+        }
+    }
+}
+
+/* -------------------------------------------------------------------------------------------- */
+/* Surfaces                                                                                      */
+/* -------------------------------------------------------------------------------------------- */
+
+/**
+ * A rounded container for a run of list rows, like the site's `Card` with `divide-y`. Rows inside
+ * keep their own 16 dp inset; the group itself sits one screen gutter in from the edges.
+ */
+@Composable
+fun ListGroup(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = Spacing.ScreenPadding),
+        shape = KubeShapes.Card,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Column { content() }
+    }
+}
+
+/**
+ * A single tappable rounded card for list rows that stand on their own (clusters, events, releases).
+ * Keeps the screen gutter and an 8 dp rhythm between stacked cards.
+ */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+fun RowCard(
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
+    enabled: Boolean = true,
+    highlighted: Boolean = false,
+    content: @Composable () -> Unit,
+) {
+    val border = BorderStroke(
+        1.dp,
+        if (highlighted) {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)
         } else {
-            PrimaryScrollableTabRow(
-                selectedTabIndex = selected,
-                modifier = Modifier.fillMaxWidth(),
-                edgePadding = Spacing.ChipPadding,
-                containerColor = Color.Transparent,
-                divider = {},
-            ) {
-                tabs.forEachIndexed { index, text ->
-                    Tab(
-                        selected = index == selected,
-                        onClick = { onSelect(index) },
-                        text = { label(text) },
-                        selectedContentColor = MaterialTheme.colorScheme.primary,
-                        unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+            MaterialTheme.colorScheme.outlineVariant
+        },
+    )
+    val clickable = if (onClick != null || onLongClick != null) {
+        Modifier.combinedClickable(
+            enabled = enabled,
+            onClick = { onClick?.invoke() },
+            onLongClick = onLongClick,
+        )
+    } else {
+        Modifier
+    }
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .cardGutter()
+            .clip(KubeShapes.Card)
+            .then(clickable),
+        shape = KubeShapes.Card,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        border = border,
+    ) {
+        content()
+    }
+}
+
+/** A tinted rounded-square icon holder, the site's `size-9 rounded-sm bg-success-soft` tile. */
+@Composable
+fun IconTile(
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    tone: ResourceHealth.Tone = ResourceHealth.Tone.PROGRESS,
+    size: androidx.compose.ui.unit.Dp = 40.dp,
+) {
+    val colors = toneColors(tone)
+    Box(
+        modifier = modifier
+            .size(size)
+            .background(colors.container, KubeShapes.Tile),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = colors.content,
+            modifier = Modifier.size(size * 0.5f),
+        )
+    }
+}
+
+/**
+ * An inline banner for a problem attached to one item: title, the server's own message, and an
+ * optional action. Rounded and soft so it reads as part of the row, not a slab across the screen.
+ */
+@Composable
+fun InlineBanner(
+    title: String,
+    message: String,
+    modifier: Modifier = Modifier,
+    tone: ResourceHealth.Tone = ResourceHealth.Tone.BAD,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null,
+) {
+    val colors = toneColors(tone)
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = KubeShapes.Field,
+        color = colors.container,
+        contentColor = colors.content,
+    ) {
+        Row(
+            modifier = Modifier.padding(
+                start = Spacing.ChipPadding,
+                top = Spacing.ChipPadding,
+                bottom = Spacing.ChipPadding,
+                end = Spacing.TightGap,
+            ),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(text = title, style = MaterialTheme.typography.labelLarge)
+                Spacer(Modifier.size(2.dp))
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                    maxLines = 4,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            if (actionLabel != null && onAction != null) {
+                TextButton(onClick = onAction) { Text(actionLabel, color = colors.content) }
             }
         }
     }
@@ -555,8 +673,20 @@ fun SearchField(
             null
         },
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        shape = KubeShapes.Pill,
+        colors = softFieldColors(),
     )
 }
+
+/** Quiet field chrome: a filled raised surface with a hairline, mint only while focused. */
+@Composable
+fun softFieldColors() = OutlinedTextFieldDefaults.colors(
+    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+    focusedBorderColor = MaterialTheme.colorScheme.primary,
+)
 
 @Composable
 fun TextFieldRow(
@@ -581,6 +711,8 @@ fun TextFieldRow(
         minLines = if (singleLine) 1 else minLines,
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         textStyle = MaterialTheme.typography.bodyMedium,
+        shape = KubeShapes.Field,
+        colors = softFieldColors(),
     )
 }
 
@@ -750,7 +882,7 @@ fun SecondaryText(text: String, modifier: Modifier = Modifier, maxLines: Int = 2
 @Composable
 fun SectionHeader(text: String, modifier: Modifier = Modifier) {
     Text(
-        text = text.uppercase(),
+        text = text,
         modifier = modifier.padding(
             start = Spacing.ScreenPadding,
             end = Spacing.ScreenPadding,

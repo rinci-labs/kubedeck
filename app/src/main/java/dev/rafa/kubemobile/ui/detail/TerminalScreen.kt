@@ -16,7 +16,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
@@ -26,12 +25,12 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AssistChip
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -51,6 +50,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
@@ -65,10 +65,14 @@ import androidx.navigation.NavController
 import dev.rafa.kubemobile.R
 import dev.rafa.kubemobile.ui.Spacing
 import dev.rafa.kubemobile.ui.AppViewModel
+import dev.rafa.kubemobile.ui.KubeShapes
 import dev.rafa.kubemobile.ui.components.EmptyState
 import dev.rafa.kubemobile.ui.components.ErrorState
+import dev.rafa.kubemobile.ui.components.InlineBanner
+import dev.rafa.kubemobile.ui.components.ListGroup
 import dev.rafa.kubemobile.ui.components.LoadingState
 import dev.rafa.kubemobile.ui.components.SecondaryText
+import dev.rafa.kubemobile.ui.components.softFieldColors
 import dev.rafa.kubemobile.ui.screenViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -265,21 +269,18 @@ fun TerminalScreen(
                 }
             }
 
+            // A rounded banner inside the gutter rather than a full-width slab, so the reconnect
+            // affordance reads as part of the session and not as a system-level alert.
             if (state.status == TerminalStatus.CLOSED || state.status == TerminalStatus.FAILED) {
-                Surface(color = MaterialTheme.colorScheme.errorContainer, modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        Modifier.padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.ItemGap),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.terminal_closed_body),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            modifier = Modifier.weight(1f),
-                        )
-                        Button(shape = RectangleShape, onClick = vm::connect) { Text(stringResource(R.string.action_reconnect)) }
-                    }
-                }
+                InlineBanner(
+                    title = stringResource(
+                        if (state.status == TerminalStatus.FAILED) R.string.state_error else R.string.state_session_closed,
+                    ),
+                    message = stringResource(R.string.terminal_closed_body),
+                    actionLabel = stringResource(R.string.action_reconnect),
+                    onAction = vm::connect,
+                    modifier = Modifier.padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.ItemGap),
+                )
             }
 
             ControlBar(
@@ -325,15 +326,18 @@ private fun ControlBar(
     onTab: () -> Unit,
 ) {
     Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.ItemGap)) {
+        Column(
+            Modifier.padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.ItemGap),
+            verticalArrangement = Arrangement.spacedBy(Spacing.TightGap),
+        ) {
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                AssistChip(shape = RectangleShape, onClick = onCtrlC, label = { Text("^C") }, enabled = enabled)
-                AssistChip(shape = RectangleShape, onClick = onEscape, label = { Text("Esc") }, enabled = enabled)
-                AssistChip(shape = RectangleShape, onClick = onTab, label = { Text("Tab") }, enabled = enabled)
+                AssistChip(shape = KubeShapes.Pill, onClick = onCtrlC, label = { Text("^C") }, enabled = enabled)
+                AssistChip(shape = KubeShapes.Pill, onClick = onEscape, label = { Text("Esc") }, enabled = enabled)
+                AssistChip(shape = KubeShapes.Pill, onClick = onTab, label = { Text("Tab") }, enabled = enabled)
                 Spacer(Modifier.weight(1f))
                 Icon(
                     imageVector = Icons.Filled.KeyboardArrowDown,
@@ -357,6 +361,8 @@ private fun ControlBar(
                     // button stays for touch-only use.
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                     keyboardActions = KeyboardActions(onSend = { onSend() }),
+                    shape = KubeShapes.Field,
+                    colors = softFieldColors(),
                 )
                 IconButton(onClick = onSend, enabled = enabled) {
                     Icon(
@@ -390,7 +396,8 @@ private fun TerminalOptionsSheet(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
             ) {
                 SHELL_OPTIONS.forEach { shell ->
-                    FilterChip(shape = RectangleShape, 
+                    FilterChip(
+                        shape = KubeShapes.Pill,
                         selected = state.shell == shell,
                         onClick = { onShell(shell) },
                         label = { Text(shell, maxLines = 1) },
@@ -398,10 +405,11 @@ private fun TerminalOptionsSheet(
                 }
             }
             if (state.containers.size > 1) {
-                Spacer(Modifier.size(8.dp))
+                Spacer(Modifier.size(Spacing.ItemGap))
                 Text(
                     text = stringResource(R.string.logs_container),
                     style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = Spacing.SheetPadding, vertical = Spacing.RowVertical),
                 )
                 androidx.compose.foundation.layout.FlowRow(
@@ -411,7 +419,8 @@ private fun TerminalOptionsSheet(
                     horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
                 ) {
                     state.containers.forEach { container ->
-                        FilterChip(shape = RectangleShape, 
+                        FilterChip(
+                            shape = KubeShapes.Pill,
                             selected = state.container == container,
                             onClick = { onContainer(container) },
                             label = { Text(container, maxLines = 1) },
@@ -419,12 +428,16 @@ private fun TerminalOptionsSheet(
                     }
                 }
             }
-            ListItem(
-                headlineContent = { Text(stringResource(R.string.terminal_tty)) },
-                supportingContent = { SecondaryText("Interactive TTY is required for most shells") },
-                trailingContent = { Switch(checked = state.tty, onCheckedChange = onTty) },
-            )
-            Spacer(Modifier.size(8.dp))
+            Spacer(Modifier.size(Spacing.ContentInset))
+            ListGroup {
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.terminal_tty)) },
+                    supportingContent = { SecondaryText("Interactive TTY is required for most shells") },
+                    trailingContent = { Switch(checked = state.tty, onCheckedChange = onTty) },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                )
+            }
+            Spacer(Modifier.size(Spacing.ItemGap))
             Row(Modifier.padding(horizontal = Spacing.SheetPadding)) {
                 TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }
             }

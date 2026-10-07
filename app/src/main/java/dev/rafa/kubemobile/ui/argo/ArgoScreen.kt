@@ -1,8 +1,8 @@
 package dev.rafa.kubemobile.ui.argo
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -18,15 +19,20 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.Layers
+import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -42,28 +48,36 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import dev.rafa.kubemobile.R
+import dev.rafa.kubemobile.ops.ResourceHealth
+import dev.rafa.kubemobile.ui.KubeShapes
 import dev.rafa.kubemobile.ui.Spacing
+import dev.rafa.kubemobile.ui.cardGutter
 import dev.rafa.kubemobile.ui.ListBottomPadding
 import dev.rafa.kubemobile.ui.AppViewModel
-import dev.rafa.kubemobile.ui.components.ListDivider
 import dev.rafa.kubemobile.ui.components.BottomBarScreen
 import dev.rafa.kubemobile.ui.Routes
 import dev.rafa.kubemobile.ui.SessionState
 import dev.rafa.kubemobile.ui.components.ConnectionGate
 import dev.rafa.kubemobile.ui.components.HealthChip
+import dev.rafa.kubemobile.ui.components.IconTile
+import dev.rafa.kubemobile.ui.components.InfoChip
 import dev.rafa.kubemobile.ui.components.LoadingState
 import dev.rafa.kubemobile.ui.components.MonoText
+import dev.rafa.kubemobile.ui.components.RowCard
 import dev.rafa.kubemobile.ui.components.SecondaryText
 import dev.rafa.kubemobile.ui.components.SectionErrorCard
 import dev.rafa.kubemobile.ui.components.SectionHeader
+import dev.rafa.kubemobile.ui.components.softFieldColors
 import dev.rafa.kubemobile.ui.navigateToTop
 import dev.rafa.kubemobile.ui.routeKey
 import dev.rafa.kubemobile.ui.screenViewModel
@@ -126,16 +140,22 @@ fun ArgoScreen(
                         LazyColumn(contentPadding = PaddingValues(bottom = ListBottomPadding)) {
                         item(key = "hdr-apps") { SectionHeader(stringResource(R.string.argo_applications)) }
                         state.applicationsError?.let { error ->
-                            item(key = "err-apps") { SectionErrorCard(error = error, onRetry = { vm.retry() }) }
+                            item(key = "err-apps") {
+                                SectionErrorCard(
+                                    error = error,
+                                    onRetry = { vm.retry() },
+                                    modifier = Modifier.padding(horizontal = Spacing.ScreenPadding),
+                                )
+                            }
                         }
                         if (state.applicationsPartial) {
-                            item(key = "partial-apps") { SecondaryText(stringResource(R.string.list_partial), modifier = Modifier.padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.RowVertical)) }
+                            item(key = "partial-apps") { SecondaryText(stringResource(R.string.list_partial), modifier = Modifier.cardGutter()) }
                         }
                         if (state.applications.isEmpty() && state.applicationsError == null) {
                             item(key = "empty-apps") {
                                 SecondaryText(
                                     stringResource(R.string.argo_empty),
-                                    modifier = Modifier.padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.RowVertical),
+                                    modifier = Modifier.cardGutter(),
                                 )
                             }
                         }
@@ -155,23 +175,28 @@ fun ArgoScreen(
                                 },
                                 onMore = { sheetTarget = row },
                             )
-                            ListDivider()
                         }
                         // Shown whenever the section has content *or* a failure: an empty list
                         // with a denied request must not vanish silently.
                         if (state.applicationSets.isNotEmpty() || state.applicationSetsError != null || state.applicationSetsPartial) {
                             item(key = "hdr-sets") { SectionHeader(stringResource(R.string.argo_applicationsets)) }
                             state.applicationSetsError?.let { error ->
-                                item(key = "err-sets") { SectionErrorCard(error = error, onRetry = { vm.retry() }) }
+                                item(key = "err-sets") {
+                                    SectionErrorCard(
+                                        error = error,
+                                        onRetry = { vm.retry() },
+                                        modifier = Modifier.padding(horizontal = Spacing.ScreenPadding),
+                                    )
+                                }
                             }
                             if (state.applicationSetsPartial) {
-                                item(key = "partial-sets") { SecondaryText(stringResource(R.string.list_partial), modifier = Modifier.padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.RowVertical)) }
+                                item(key = "partial-sets") { SecondaryText(stringResource(R.string.list_partial), modifier = Modifier.cardGutter()) }
                             }
                             if (state.applicationSets.isEmpty() && state.applicationSetsError == null) {
                                 item(key = "empty-sets") {
                                     SecondaryText(
                                         stringResource(R.string.argo_sets_empty),
-                                        modifier = Modifier.padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.RowVertical),
+                                        modifier = Modifier.cardGutter(),
                                     )
                                 }
                             }
@@ -180,7 +205,6 @@ fun ArgoScreen(
                                 // deliberately not clickable rather than a dead tap target; the
                                 // overflow still offers the actions that do exist.
                                 ArgoRowView(row = row, onClick = null, onMore = { sheetTarget = row })
-                                ListDivider()
                             }
                         }
                     }
@@ -204,7 +228,7 @@ fun ArgoScreen(
                     listOfNotNull(row.kind, row.namespace, row.sync).joinToString(" · "),
                     modifier = Modifier.padding(horizontal = Spacing.SheetPadding),
                 )
-                Spacer(Modifier.size(8.dp))
+                Spacer(Modifier.size(Spacing.ItemGap))
                 SheetRow(stringResource(R.string.detail_argo_refresh), Icons.Filled.Refresh) {
                     val target = row
                     sheetTarget = null
@@ -252,7 +276,7 @@ private fun SheetRow(
         headlineContent = {
             Text(
                 text = label,
-                color = if (destructive) MaterialTheme.colorScheme.error else androidx.compose.ui.graphics.Color.Unspecified,
+                color = if (destructive) MaterialTheme.colorScheme.error else Color.Unspecified,
             )
         },
         leadingContent = {
@@ -262,31 +286,55 @@ private fun SheetRow(
                 tint = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         },
+        // Sit on the sheet's own surface instead of painting a mismatched band per row.
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         modifier = Modifier.clickable(onClick = onClick),
     )
 }
 
+/** Argo CD's own sync vocabulary mapped onto the shared tones, for the sync pill on each card. */
+private fun syncTone(sync: String): ResourceHealth.Tone = when (sync.lowercase()) {
+    "synced" -> ResourceHealth.Tone.OK
+    "outofsync" -> ResourceHealth.Tone.WARN
+    else -> ResourceHealth.Tone.NEUTRAL
+}
+
+/**
+ * One Application or ApplicationSet as a standalone card, after the site's SyncCard: a tinted tile
+ * carrying the health tone, the name over its kind and namespace, then the health, sync and
+ * auto-sync pills, then the target revision, destination and last operation.
+ */
 @Composable
 private fun ArgoRowView(row: ArgoRow, onClick: (() -> Unit)?, onMore: () -> Unit) {
-    ListItem(
-        headlineContent = { Text(row.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        supportingContent = {
-            Column {
-                SecondaryText(
-                    listOfNotNull(
-                        row.namespace,
-                        row.targetRevision?.let { stringResource(R.string.label_target_revision) + " " + it },
-                        row.destination,
-                        row.lastOperation,
-                        if (row.autoSync) stringResource(R.string.argo_autosync) else null,
-                    ).joinToString(" · "),
-                    maxLines = 2,
-                )
-            }
-        },
-        trailingContent = {
+    // A null onClick leaves the card inert: no ripple, no tap target, no dead end.
+    RowCard(onClick = onClick) {
+        Column(
+            Modifier.padding(
+                start = Spacing.CardPadding,
+                top = Spacing.ChipPadding,
+                end = Spacing.TightGap,
+                bottom = Spacing.CardPadding,
+            ),
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                HealthChip(row.health)
+                IconTile(
+                    icon = if (row.kind == "ApplicationSet") Icons.Outlined.Layers else Icons.Outlined.Apps,
+                    tone = row.health.tone,
+                    size = 36.dp,
+                )
+                Spacer(Modifier.width(Spacing.ChipPadding))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = row.name,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    SecondaryText(
+                        listOfNotNull(row.kind, row.namespace).joinToString(" · "),
+                        maxLines = 1,
+                    )
+                }
                 IconButton(onClick = onMore) {
                     Icon(
                         imageVector = Icons.Filled.Tune,
@@ -295,10 +343,34 @@ private fun ArgoRowView(row: ArgoRow, onClick: (() -> Unit)?, onMore: () -> Unit
                     )
                 }
             }
-        },
-        // A null onClick leaves the row inert: no ripple, no tap target, no dead end.
-        modifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier,
-    )
+            Spacer(Modifier.size(Spacing.ItemGap))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                HealthChip(row.health)
+                row.sync?.takeIf { it.isNotBlank() }?.let { sync ->
+                    InfoChip(sync, tone = syncTone(sync))
+                }
+                if (row.autoSync) {
+                    InfoChip(stringResource(R.string.argo_autosync))
+                }
+            }
+            val meta = listOfNotNull(
+                row.targetRevision?.let { stringResource(R.string.label_target_revision) + " " + it },
+                row.destination,
+                row.lastOperation,
+            ).joinToString(" · ")
+            if (meta.isNotEmpty()) {
+                Spacer(Modifier.size(Spacing.ItemGap))
+                SecondaryText(
+                    meta,
+                    maxLines = 2,
+                    modifier = Modifier.padding(end = Spacing.ChipPadding),
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -310,28 +382,38 @@ private fun ArgoMissingPanel() {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Icon(
-            imageVector = Icons.Filled.Sync,
-            contentDescription = null,
-            modifier = Modifier.size(48.dp),
-            tint = MaterialTheme.colorScheme.primary,
+        IconTile(icon = Icons.Outlined.Sync, tone = ResourceHealth.Tone.NEUTRAL, size = 48.dp)
+        Spacer(Modifier.size(Spacing.ContentInset))
+        Text(
+            text = stringResource(R.string.argo_missing_title),
+            style = MaterialTheme.typography.titleMedium,
+            textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.size(16.dp))
-        Text(stringResource(R.string.argo_missing_title), style = MaterialTheme.typography.titleMedium)
-        Spacer(Modifier.size(8.dp))
+        Spacer(Modifier.size(Spacing.ItemGap))
         Text(
             text = stringResource(R.string.argo_missing_hint),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.size(16.dp))
+        Spacer(Modifier.size(Spacing.ContentInset))
         Text(
             text = stringResource(R.string.argo_missing_body),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.size(12.dp))
-        ARGO_CRD_NAMES.forEach { crd -> MonoText(crd, fontSize = 10.sp) }
+        Spacer(Modifier.size(Spacing.ChipPadding))
+        // The probed CRD names as a boxed code block, so they read as literal identifiers.
+        Surface(
+            shape = KubeShapes.Field,
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        ) {
+            Column(Modifier.padding(Spacing.ChipPadding)) {
+                ARGO_CRD_NAMES.forEach { crd -> MonoText(crd, fontSize = 10.sp) }
+            }
+        }
     }
 }
 
@@ -352,7 +434,7 @@ private fun ArgoSyncDialog(
             Column {
                 if (defaultRevision.isNotBlank()) {
                     SecondaryText(defaultRevision)
-                    Spacer(Modifier.size(8.dp))
+                    Spacer(Modifier.size(Spacing.ItemGap))
                 }
                 OutlinedTextField(
                     value = revision,
@@ -364,8 +446,10 @@ private fun ArgoSyncDialog(
                         fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                         fontSize = 12.sp,
                     ),
+                    shape = KubeShapes.Field,
+                    colors = softFieldColors(),
                 )
-                Spacer(Modifier.size(8.dp))
+                Spacer(Modifier.size(Spacing.ItemGap))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.detail_argo_prune), Modifier.weight(1f))
                     Switch(checked = prune, onCheckedChange = { prune = it })
@@ -377,7 +461,8 @@ private fun ArgoSyncDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSync(revision.takeIf { it.isNotBlank() }, prune, dryRun) }) {
+            // Sync is the dialog's one forward action, so it gets the filled pill.
+            Button(onClick = { onSync(revision.takeIf { it.isNotBlank() }, prune, dryRun) }) {
                 Text(stringResource(R.string.action_sync))
             }
         },

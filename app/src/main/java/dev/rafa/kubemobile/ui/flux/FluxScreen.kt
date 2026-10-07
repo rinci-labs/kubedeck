@@ -1,8 +1,8 @@
 package dev.rafa.kubemobile.ui.flux
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -19,15 +20,21 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.outlined.AccountTree
+import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.outlined.Layers
+import androidx.compose.material.icons.outlined.Source
+import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -41,23 +48,31 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import dev.rafa.kubemobile.R
+import dev.rafa.kubemobile.ops.ResourceHealth
+import dev.rafa.kubemobile.ui.KubeShapes
 import dev.rafa.kubemobile.ui.Spacing
+import dev.rafa.kubemobile.ui.cardGutter
 import dev.rafa.kubemobile.ui.ListBottomPadding
 import dev.rafa.kubemobile.ui.AppViewModel
-import dev.rafa.kubemobile.ui.components.ListDivider
 import dev.rafa.kubemobile.ui.components.BottomBarScreen
 import dev.rafa.kubemobile.ui.Routes
 import dev.rafa.kubemobile.ui.SessionState
 import dev.rafa.kubemobile.ui.components.ConnectionGate
 import dev.rafa.kubemobile.ui.components.HealthChip
+import dev.rafa.kubemobile.ui.components.IconTile
+import dev.rafa.kubemobile.ui.components.InfoChip
 import dev.rafa.kubemobile.ui.components.LoadingState
 import dev.rafa.kubemobile.ui.components.MonoText
+import dev.rafa.kubemobile.ui.components.RowCard
 import dev.rafa.kubemobile.ui.components.SecondaryText
 import dev.rafa.kubemobile.ui.components.SectionErrorCard
 import dev.rafa.kubemobile.ui.components.SectionHeader
@@ -133,19 +148,23 @@ fun FluxScreen(
                             // list may claim there is nothing here.
                             section.error?.let { error ->
                                 item(key = "err-${section.section.name}") {
-                                    SectionErrorCard(error = error, onRetry = { vm.retrySection() })
+                                    SectionErrorCard(
+                                        error = error,
+                                        onRetry = { vm.retrySection() },
+                                        modifier = Modifier.padding(horizontal = Spacing.ScreenPadding),
+                                    )
                                 }
                             }
                             if (section.partial) {
                                 item(key = "partial-${section.section.name}") {
-                                    SecondaryText(stringResource(R.string.list_partial), modifier = Modifier.padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.RowVertical))
+                                    SecondaryText(stringResource(R.string.list_partial), modifier = Modifier.cardGutter())
                                 }
                             }
                             if (section.rows.isEmpty() && section.error == null) {
                                 item(key = "empty-${section.section.name}") {
                                     SecondaryText(
                                         stringResource(R.string.state_empty),
-                                        modifier = Modifier.padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.RowVertical),
+                                        modifier = Modifier.cardGutter(),
                                     )
                                 }
                             }
@@ -164,7 +183,6 @@ fun FluxScreen(
                                     },
                                     onMore = { sheetTarget = row },
                                 )
-                                ListDivider()
                             }
                         }
                     }
@@ -188,10 +206,11 @@ fun FluxScreen(
                     listOfNotNull(row.kind, row.namespace).joinToString(" · "),
                     modifier = Modifier.padding(horizontal = Spacing.SheetPadding),
                 )
-                Spacer(Modifier.size(8.dp))
+                Spacer(Modifier.size(Spacing.ItemGap))
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.action_reconcile)) },
                     leadingContent = { Icon(Icons.Filled.Refresh, contentDescription = null) },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = Modifier.clickable {
                         val target = row
                         sheetTarget = null
@@ -203,6 +222,7 @@ fun FluxScreen(
                         headlineContent = { Text(stringResource(R.string.flux_reconcile_with_source)) },
                         supportingContent = { SecondaryText(stringResource(R.string.flux_sources)) },
                         leadingContent = { Icon(Icons.Filled.AccountTree, contentDescription = null) },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         modifier = Modifier.clickable {
                             val target = row
                             sheetTarget = null
@@ -224,6 +244,7 @@ fun FluxScreen(
                             contentDescription = null,
                         )
                     },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     modifier = Modifier.clickable {
                         val target = row
                         sheetTarget = null
@@ -247,12 +268,12 @@ private fun sectionTitle(section: FluxSection, present: List<FluxSectionState>):
 
 @Composable
 private fun FluxSummary(sections: List<FluxSectionState>) {
-    val ready = sections.sumOf { section -> section.rows.count { it.health.tone == dev.rafa.kubemobile.ops.ResourceHealth.Tone.OK } }
+    val ready = sections.sumOf { section -> section.rows.count { it.health.tone == ResourceHealth.Tone.OK } }
     val total = sections.sumOf { it.rows.size }
     val failing = sections.sumOf { section ->
         section.rows.count {
-            it.health.tone == dev.rafa.kubemobile.ops.ResourceHealth.Tone.BAD ||
-                it.health.tone == dev.rafa.kubemobile.ops.ResourceHealth.Tone.WARN
+            it.health.tone == ResourceHealth.Tone.BAD ||
+                it.health.tone == ResourceHealth.Tone.WARN
         }
     }
     Row(
@@ -271,40 +292,58 @@ private fun FluxSummary(sections: List<FluxSectionState>) {
 private fun StatCard(label: String, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier,
+        shape = KubeShapes.Card,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.outlineVariant,
-        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
-        Column(Modifier.padding(Spacing.CardPadding)) {
+        Column(Modifier.padding(Spacing.ChipPadding)) {
             Text(label, style = MaterialTheme.typography.bodyMedium, maxLines = 2)
         }
     }
 }
 
+/** The tile glyph for a Flux kind, so a source, a Kustomization and a HelmRelease read apart. */
+private fun fluxKindIcon(kind: String): ImageVector = when (kind) {
+    "Kustomization" -> Icons.Outlined.AccountTree
+    "HelmRelease", "HelmRepository" -> Icons.Outlined.Inventory2
+    "GitRepository" -> Icons.Outlined.Source
+    "OCIRepository" -> Icons.Outlined.Layers
+    "Bucket" -> Icons.Outlined.Storage
+    else -> Icons.Outlined.AccountTree
+}
+
+/**
+ * One Flux object as a standalone card, after the site's SyncCard: a tinted tile carrying the
+ * health tone, the name over its kind and namespace, the status pills underneath, then the
+ * revision, interval and URL. The overflow stays a separate tap target from the card itself.
+ */
 @Composable
 private fun FluxRowView(row: FluxRow, onClick: () -> Unit, onMore: () -> Unit) {
-    ListItem(
-        headlineContent = { Text(row.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        supportingContent = {
-            Column {
-                SecondaryText(
-                    listOfNotNull(
-                        row.namespace,
-                        row.revision?.let { "rev $it" },
-                        row.interval,
-                        row.url,
-                        if (row.suspended) stringResource(R.string.flux_suspended) else null,
-                    ).joinToString(" · "),
-                    maxLines = 2,
-                )
-            }
-        },
-        trailingContent = {
+    RowCard(onClick = onClick) {
+        Column(
+            Modifier.padding(
+                start = Spacing.CardPadding,
+                top = Spacing.ChipPadding,
+                end = Spacing.TightGap,
+                bottom = Spacing.CardPadding,
+            ),
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                HealthChip(row.health)
+                IconTile(icon = fluxKindIcon(row.kind), tone = row.health.tone, size = 36.dp)
+                Spacer(Modifier.width(Spacing.ChipPadding))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = row.name,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    SecondaryText(
+                        listOfNotNull(row.kind, row.namespace).joinToString(" · "),
+                        maxLines = 1,
+                    )
+                }
                 IconButton(onClick = onMore) {
                     Icon(
                         imageVector = Icons.Filled.Tune,
@@ -313,9 +352,31 @@ private fun FluxRowView(row: FluxRow, onClick: () -> Unit, onMore: () -> Unit) {
                     )
                 }
             }
-        },
-        modifier = Modifier.clickable(onClick = onClick),
-    )
+            Spacer(Modifier.size(Spacing.ItemGap))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                HealthChip(row.health)
+                if (row.suspended) {
+                    InfoChip(stringResource(R.string.flux_suspended), tone = ResourceHealth.Tone.WARN)
+                }
+            }
+            val meta = listOfNotNull(
+                row.revision?.let { "rev $it" },
+                row.interval,
+                row.url,
+            ).joinToString(" · ")
+            if (meta.isNotEmpty()) {
+                Spacer(Modifier.size(Spacing.ItemGap))
+                SecondaryText(
+                    meta,
+                    maxLines = 2,
+                    modifier = Modifier.padding(end = Spacing.ChipPadding),
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -327,29 +388,39 @@ private fun FluxMissingPanel() {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Icon(
-            imageVector = Icons.Filled.AccountTree,
-            contentDescription = null,
-            modifier = Modifier.size(48.dp),
-            tint = MaterialTheme.colorScheme.primary,
+        IconTile(icon = Icons.Outlined.AccountTree, tone = ResourceHealth.Tone.NEUTRAL, size = 48.dp)
+        Spacer(Modifier.size(Spacing.ContentInset))
+        Text(
+            text = stringResource(R.string.flux_missing_title),
+            style = MaterialTheme.typography.titleMedium,
+            textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.size(16.dp))
-        Text(stringResource(R.string.flux_missing_title), style = MaterialTheme.typography.titleMedium)
-        Spacer(Modifier.size(8.dp))
+        Spacer(Modifier.size(Spacing.ItemGap))
         Text(
             text = stringResource(R.string.flux_missing_hint),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.size(16.dp))
+        Spacer(Modifier.size(Spacing.ContentInset))
         Text(
             text = stringResource(R.string.flux_missing_body),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.size(12.dp))
-        FLUX_CRD_NAMES.forEach { crd ->
-            MonoText(crd, fontSize = androidx.compose.ui.unit.TextUnit(10f, androidx.compose.ui.unit.TextUnitType.Sp))
+        Spacer(Modifier.size(Spacing.ChipPadding))
+        // The probed CRD names as a boxed code block, so they read as literal identifiers.
+        Surface(
+            shape = KubeShapes.Field,
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        ) {
+            Column(Modifier.padding(Spacing.ChipPadding)) {
+                FLUX_CRD_NAMES.forEach { crd ->
+                    MonoText(crd, fontSize = androidx.compose.ui.unit.TextUnit(10f, androidx.compose.ui.unit.TextUnitType.Sp))
+                }
+            }
         }
     }
 }

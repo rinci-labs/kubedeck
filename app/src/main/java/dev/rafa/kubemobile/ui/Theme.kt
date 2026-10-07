@@ -115,17 +115,44 @@ private val RinciLight = lightColorScheme(
 )
 
 /**
- * All-sharp geometry. The Rinci surface is a ruled grid, so every Material surface that draws from
- * `MaterialTheme.shapes` — cards, dialogs, menus, text fields, small text buttons — loses its
- * corner radius here rather than in twenty call sites.
+ * Soft geometry, mirrored from the landing site's radius scale (`--radius-sm` 10px through
+ * `--radius-2xl` 36px). Every Material surface that draws from `MaterialTheme.shapes` — cards,
+ * dialogs, menus, text fields, sheets — picks its corner here rather than in twenty call sites.
  */
-private val SharpShapes = Shapes(
-    extraSmall = RoundedCornerShape(0.dp),
-    small = RoundedCornerShape(0.dp),
-    medium = RoundedCornerShape(0.dp),
-    large = RoundedCornerShape(0.dp),
-    extraLarge = RoundedCornerShape(0.dp),
+private val SoftShapes = Shapes(
+    extraSmall = RoundedCornerShape(Radius.Small),
+    small = RoundedCornerShape(Radius.Medium),
+    medium = RoundedCornerShape(Radius.Large),
+    large = RoundedCornerShape(Radius.ExtraLarge),
+    extraLarge = RoundedCornerShape(Radius.Sheet),
 )
+
+/** Corner radii by role. Screens reach for these instead of literal dp values. */
+object Radius {
+    /** Chips inside dense rows, icon tiles, code blocks. */
+    val Small = 10.dp
+
+    /** Text fields, menus, small cards. */
+    val Medium = 14.dp
+
+    /** Cards, grouped lists, banners. */
+    val Large = 20.dp
+
+    /** Dialogs and hero cards. */
+    val ExtraLarge = 28.dp
+
+    /** Bottom sheets. */
+    val Sheet = 32.dp
+}
+
+/** Shared shapes, so a card on one screen is the same card on every other screen. */
+object KubeShapes {
+    val Pill = RoundedCornerShape(percent = 50)
+    val Tile = RoundedCornerShape(Radius.Small)
+    val Field = RoundedCornerShape(Radius.Medium)
+    val Card = RoundedCornerShape(Radius.Large)
+    val Dialog = RoundedCornerShape(Radius.ExtraLarge)
+}
 
 /**
  * System sans and system monospace with explicit weight and tracking instead of a bundled face.
@@ -160,7 +187,7 @@ fun KubeTheme(
 ) {
     MaterialTheme(
         colorScheme = if (darkTheme) RinciDark else RinciLight,
-        shapes = SharpShapes,
+        shapes = SoftShapes,
         typography = RinciTypography,
         content = content,
     )

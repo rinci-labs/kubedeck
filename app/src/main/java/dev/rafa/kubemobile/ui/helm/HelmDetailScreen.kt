@@ -1,5 +1,6 @@
 package dev.rafa.kubemobile.ui.helm
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
@@ -11,8 +12,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
@@ -21,10 +24,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -41,6 +44,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -53,16 +63,21 @@ import dev.rafa.kubemobile.ops.HelmRelease
 import dev.rafa.kubemobile.ops.ResourceHealth
 import dev.rafa.kubemobile.ui.ListBottomPadding
 import dev.rafa.kubemobile.ui.AppViewModel
+import dev.rafa.kubemobile.ui.KubeShapes
+import dev.rafa.kubemobile.ui.Radius
 import dev.rafa.kubemobile.ui.Spacing
+import dev.rafa.kubemobile.ui.cardGutter
 import dev.rafa.kubemobile.ui.components.ListDivider
 import dev.rafa.kubemobile.ui.components.EmptyState
 import dev.rafa.kubemobile.ui.components.ErrorState
 import dev.rafa.kubemobile.ui.components.HealthChip
+import dev.rafa.kubemobile.ui.components.IconTile
 import dev.rafa.kubemobile.ui.components.KeyValueRow
 import dev.rafa.kubemobile.ui.components.LoadingState
 import dev.rafa.kubemobile.ui.components.MenuAction
 import dev.rafa.kubemobile.ui.components.MonoText
 import dev.rafa.kubemobile.ui.components.OverflowMenu
+import dev.rafa.kubemobile.ui.components.RowCard
 import dev.rafa.kubemobile.ui.components.SearchField
 import dev.rafa.kubemobile.ui.components.SecondaryText
 import dev.rafa.kubemobile.ui.components.SectionCard
@@ -186,7 +201,7 @@ fun HelmDetailScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         HealthChip(release.health())
-                        Spacer(Modifier.size(8.dp))
+                        Spacer(Modifier.size(Spacing.ItemGap))
                         SecondaryText(
                             listOfNotNull(
                                 release.appVersion.takeIf { it.isNotBlank() }?.let { "app $it" },
@@ -296,7 +311,10 @@ private fun OverviewTab(vm: HelmDetailViewModel, release: HelmRelease) {
 
     LazyColumn(contentPadding = PaddingValues(bottom = ListBottomPadding)) {
         item {
-            SectionCard(title = stringResource(R.string.label_chart)) {
+            SectionCard(
+                title = stringResource(R.string.label_chart),
+                modifier = Modifier.cardGutter(),
+            ) {
                 KeyValueRow(stringResource(R.string.label_chart), release.chartName, copyable = true)
                 KeyValueRow(stringResource(R.string.label_version), release.chartVersion, copyable = true)
                 KeyValueRow(stringResource(R.string.label_app_version), release.appVersion, copyable = true)
@@ -332,12 +350,16 @@ private fun OverviewTab(vm: HelmDetailViewModel, release: HelmRelease) {
                     },
                 )
             }
-            items(diff) { (key, defaults, user) ->
+            itemsIndexed(diff) { index, (key, defaults, user) ->
                 val overridden = user != null && user != defaults
+                if (index > 0) {
+                    ListDivider(Modifier.lazyGroupSegment(first = false, last = false))
+                }
                 Row(
                     Modifier
+                        .lazyGroupSegment(first = index == 0, last = index == diff.lastIndex)
                         .fillMaxWidth()
-                        .padding(horizontal = Spacing.CardPadding, vertical = Spacing.RowVertical),
+                        .padding(horizontal = Spacing.CardPadding, vertical = Spacing.ItemGap),
                     verticalAlignment = Alignment.Top,
                 ) {
                     Column(Modifier.weight(1f)) {
@@ -354,7 +376,6 @@ private fun OverviewTab(vm: HelmDetailViewModel, release: HelmRelease) {
                         },
                     )
                 }
-                ListDivider()
             }
         }
         item {
@@ -395,12 +416,16 @@ private fun ManifestTab(
             value = query,
             onValueChange = onQuery,
             placeholder = stringResource(R.string.label_search_manifest),
-            modifier = Modifier.padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.RowVertical),
+            modifier = Modifier.cardGutter(),
         )
         if (filtered.isNotEmpty()) {
             SectionHeader(stringResource(R.string.helm_entries))
+            // One rounded group, drawn per item so a chart with hundreds of objects stays lazy.
             LazyColumn(Modifier.weight(1f)) {
-                items(filtered) { entry ->
+                itemsIndexed(filtered) { index, entry ->
+                    if (index > 0) {
+                        ListDivider(Modifier.lazyGroupSegment(first = false, last = false))
+                    }
                     ListItem(
                         headlineContent = { Text(entry.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                         supportingContent = {
@@ -408,6 +433,11 @@ private fun ManifestTab(
                                 listOfNotNull(entry.kind, entry.namespace, entry.apiVersion).joinToString(" · "),
                             )
                         },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                        modifier = Modifier.lazyGroupSegment(
+                            first = index == 0,
+                            last = index == filtered.lastIndex,
+                        ),
                     )
                 }
             }
@@ -418,12 +448,7 @@ private fun ManifestTab(
                 body = stringResource(R.string.helm_manifest_empty),
             )
         } else {
-            Text(
-                text = stringResource(R.string.label_manifest),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(start = Spacing.ScreenPadding, top = Spacing.ItemGap, bottom = Spacing.RowVertical),
-            )
+            SectionHeader(stringResource(R.string.label_manifest))
             Box(Modifier.weight(1f)) {
                 YamlBlock(text = release.manifest, horizontal = true, scrollVertically = true)
             }
@@ -445,12 +470,20 @@ private fun HistoryTab(
     }
     LazyColumn(contentPadding = PaddingValues(bottom = ListBottomPadding)) {
         items(history, key = { it.secretName }) { revision ->
-            ListItem(
-                headlineContent = {
-                    Text(stringResource(R.string.label_history_revision, revision.revision))
-                },
-                supportingContent = {
-                    Column {
+            // Each revision is its own tappable card; the tile carries the revision's status tone
+            // so a failed upgrade stands out in the timeline without reading every line.
+            RowCard(onClick = { onPick(revision) }) {
+                Row(
+                    modifier = Modifier.padding(Spacing.CardPadding),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconTile(icon = Icons.Filled.History, tone = revision.health().tone, size = 36.dp)
+                    Spacer(Modifier.width(Spacing.ChipPadding))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.label_history_revision, revision.revision),
+                            style = MaterialTheme.typography.titleSmall,
+                        )
                         SecondaryText(
                             listOfNotNull(
                                 revision.status.takeIf { it.isNotBlank() },
@@ -462,13 +495,8 @@ private fun HistoryTab(
                             SecondaryText(revision.description, maxLines = 1)
                         }
                     }
-                },
-                leadingContent = {
-                    Icon(Icons.Filled.History, contentDescription = null)
-                },
-                modifier = Modifier.clickable { onPick(revision) },
-            )
-            ListDivider()
+                }
+            }
         }
     }
 }
@@ -488,13 +516,15 @@ private fun YamlBlock(
     horizontal: Boolean,
     scrollVertically: Boolean = false,
 ) {
-    // Full-bleed surface with the screen gutter applied once, inside: the code text then lines up
-    // with the sibling section text at 16 dp instead of sitting at a nested 8 dp.
+    // A rounded code pane inside the screen gutter, on the raised surface with a hairline, so it
+    // reads as boxed content like every other card rather than a slab across the screen.
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = KubeShapes.Field,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = Spacing.RowVertical),
+            .cardGutter(),
     ) {
         val vertical = rememberScrollState()
         val horizontalState = rememberScrollState()
@@ -509,6 +539,45 @@ private fun YamlBlock(
             }
         }
     }
+}
+
+/**
+ * Draws one item of a lazily rendered `ListGroup`: the rounded raised card with its hairline,
+ * sliced so that consecutive items join into a single card.
+ *
+ * `ListGroup` itself takes one composable lambda, which would force every row of a long list (a
+ * chart's flattened values, a release's objects) to compose at once. Here each item paints only
+ * its own band of the shared outline: the rounded rect is drawn taller than the item and clipped,
+ * so a middle item shows just the two side rules, the [first] the top corners and the [last] the
+ * bottom corners. A single item with both flags set is a complete card.
+ */
+@Composable
+private fun Modifier.lazyGroupSegment(first: Boolean, last: Boolean): Modifier {
+    val fill = MaterialTheme.colorScheme.surfaceContainerLow
+    val line = MaterialTheme.colorScheme.outlineVariant
+    return this
+        .padding(horizontal = Spacing.ScreenPadding)
+        .clipToBounds()
+        .drawBehind {
+            val radius = Radius.Large.toPx()
+            val stroke = 1.dp.toPx()
+            val top = if (first) stroke / 2 else -(radius + stroke)
+            val bottom = if (last) size.height - stroke / 2 else size.height + radius + stroke
+            val corner = CornerRadius(radius, radius)
+            drawRoundRect(
+                color = fill,
+                topLeft = Offset(0f, top),
+                size = Size(size.width, bottom - top),
+                cornerRadius = corner,
+            )
+            drawRoundRect(
+                color = line,
+                topLeft = Offset(stroke / 2, top),
+                size = Size(size.width - stroke, bottom - top),
+                cornerRadius = corner,
+                style = Stroke(width = stroke),
+            )
+        }
 }
 
 /* -------------------------------------------------------------------------------------------- */
@@ -528,7 +597,7 @@ private fun UninstallDialog(
         text = {
             Column {
                 Text(stringResource(R.string.helm_uninstall_warning))
-                Spacer(Modifier.size(12.dp))
+                Spacer(Modifier.size(Spacing.ChipPadding))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = stringResource(R.string.helm_uninstall_delete_resources),
@@ -605,6 +674,8 @@ private fun HistoryPickerDialog(
                             Text(stringResource(R.string.label_history_revision, revision.revision))
                         },
                         supportingContent = { SecondaryText(revision.status) },
+                        // Sit on the dialog's own surface instead of painting a mismatched band.
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         modifier = Modifier.clickable { onPick(revision) },
                     )
                 }

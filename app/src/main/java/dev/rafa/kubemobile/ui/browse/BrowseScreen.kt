@@ -1,6 +1,6 @@
 package dev.rafa.kubemobile.ui.browse
 
-import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,7 +8,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -33,6 +36,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -49,6 +53,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -58,7 +63,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import dev.rafa.kubemobile.R
 import dev.rafa.kubemobile.k8s.ApiResource
+import dev.rafa.kubemobile.ui.KubeShapes
 import dev.rafa.kubemobile.ui.Spacing
+import dev.rafa.kubemobile.ui.cardGutter
 import dev.rafa.kubemobile.ui.ListBottomPadding
 import dev.rafa.kubemobile.ui.ALL_NAMESPACES
 import dev.rafa.kubemobile.ui.AppViewModel
@@ -68,7 +75,10 @@ import dev.rafa.kubemobile.ui.SessionState
 import dev.rafa.kubemobile.ui.components.BottomBarScreen
 import dev.rafa.kubemobile.ui.components.EmptyState
 import dev.rafa.kubemobile.ui.components.ConnectionGate
+import dev.rafa.kubemobile.ui.components.IconTile
+import dev.rafa.kubemobile.ui.components.InfoChip
 import dev.rafa.kubemobile.ui.components.ListDivider
+import dev.rafa.kubemobile.ui.components.ListGroup
 import dev.rafa.kubemobile.ui.components.SearchField
 import dev.rafa.kubemobile.ui.components.SecondaryText
 import dev.rafa.kubemobile.ui.navigateToTop
@@ -259,12 +269,15 @@ fun BrowseScreen(app: AppViewModel, navController: NavController) {
                                     item(key = "dash") { DashboardGrid(app, navController) }
                                 }
 
+                                // Each section is one rounded group of rows. The lists are bounded by
+                                // the discovery catalog (tens of kinds), so a group per item keeps
+                                // the card intact without giving up meaningful laziness.
                                 if (recent.isNotEmpty() && query.isEmpty()) {
                                     item(key = "hdr-recent") {
                                         CatalogHeader(stringResource(R.string.label_recent))
                                     }
-                                    items(recent, key = { "recent-${it.qualified}" }) { resource ->
-                                        CatalogRow(resource) { open(app, navController, resource) }
+                                    item(key = "sec-recent") {
+                                        CatalogGroup(recent) { open(app, navController, it) }
                                     }
                                 }
 
@@ -272,8 +285,8 @@ fun BrowseScreen(app: AppViewModel, navController: NavController) {
                                     item(key = "hdr-common") {
                                         CatalogHeader(stringResource(R.string.label_common))
                                     }
-                                    items(visibleCommon, key = { "common-${it.qualified}" }) { resource ->
-                                        CatalogRow(resource) { open(app, navController, resource) }
+                                    item(key = "sec-common") {
+                                        CatalogGroup(visibleCommon) { open(app, navController, it) }
                                     }
                                 }
 
@@ -281,28 +294,25 @@ fun BrowseScreen(app: AppViewModel, navController: NavController) {
                                     item(key = "hdr-groups") {
                                         CatalogHeader(stringResource(R.string.label_api_groups))
                                     }
-                                    visibleGroups.forEach { (section, resources) ->
-                                        item(key = "group-${section.name}") {
-                                            GroupRow(
-                                                section = section,
-                                                expanded = section.name in expandedGroups,
-                                                onToggle = {
-                                                    expandedGroups = if (section.name in expandedGroups) {
-                                                        expandedGroups - section.name
-                                                    } else {
-                                                        expandedGroups + section.name
-                                                    }
-                                                },
-                                            )
-                                        }
-                                        if (section.name in expandedGroups) {
-                                            items(
-                                                resources,
-                                                key = { "g-${section.name}-${it.qualified}" },
-                                            ) { resource ->
-                                                CatalogRow(resource) { open(app, navController, resource) }
-                                            }
-                                        }
+                                    // One card per API group: the header row toggles, and the kinds
+                                    // unfold inside the same card so the grouping stays visible.
+                                    items(
+                                        visibleGroups,
+                                        key = { (section, _) -> "group-${section.name}" },
+                                    ) { (section, resources) ->
+                                        GroupCard(
+                                            section = section,
+                                            resources = resources,
+                                            expanded = section.name in expandedGroups,
+                                            onToggle = {
+                                                expandedGroups = if (section.name in expandedGroups) {
+                                                    expandedGroups - section.name
+                                                } else {
+                                                    expandedGroups + section.name
+                                                }
+                                            },
+                                            onOpen = { open(app, navController, it) },
+                                        )
                                     }
                                 }
 
@@ -310,8 +320,8 @@ fun BrowseScreen(app: AppViewModel, navController: NavController) {
                                     item(key = "hdr-crd") {
                                         CatalogHeader(stringResource(R.string.label_custom_resources))
                                     }
-                                    items(visibleLoose, key = { "crd-${it.qualified}" }) { resource ->
-                                        CatalogRow(resource) { open(app, navController, resource) }
+                                    item(key = "sec-crd") {
+                                        CatalogGroup(visibleLoose) { open(app, navController, it) }
                                     }
                                 }
 
@@ -319,8 +329,8 @@ fun BrowseScreen(app: AppViewModel, navController: NavController) {
                                     item(key = "hdr-core") {
                                         CatalogHeader(stringResource(R.string.label_core))
                                     }
-                                    items(visibleCore, key = { "core-${it.qualified}" }) { resource ->
-                                        CatalogRow(resource) { open(app, navController, resource) }
+                                    item(key = "sec-core") {
+                                        CatalogGroup(visibleCore) { open(app, navController, it) }
                                     }
                                 }
                             }
@@ -410,7 +420,8 @@ private fun BrowseNamespaceRow(
             ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        AssistChip(shape = RectangleShape, 
+        AssistChip(
+            shape = KubeShapes.Pill,
             onClick = onOpen,
             label = {
                 Text(
@@ -453,14 +464,14 @@ private fun BrowseFilterRow(
     FlowRow(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.RowVertical),
+            .cardGutter(),
         horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
         verticalArrangement = Arrangement.spacedBy(Spacing.TightGap),
         itemVerticalAlignment = Alignment.CenterVertically,
     ) {
         ScopeFilter.entries.forEach { entry ->
             FilterChip(
-                shape = RectangleShape,
+                shape = KubeShapes.Pill,
                 selected = scope == entry,
                 onClick = { onScope(entry) },
                 label = {
@@ -478,7 +489,7 @@ private fun BrowseFilterRow(
             )
         }
         FilterChip(
-            shape = RectangleShape,
+            shape = KubeShapes.Pill,
             selected = groupCount > 0,
             onClick = onOpenGroups,
             label = {
@@ -502,68 +513,100 @@ private fun BrowseFilterRow(
     }
 }
 
+/** Sentence-case section label in muted text, sitting above its rounded group. */
 @Composable
 private fun CatalogHeader(text: String) {
-    Column {
-        ListDivider()
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(
-                start = Spacing.ScreenPadding,
-                end = Spacing.ScreenPadding,
-                top = Spacing.ContentInset,
-                bottom = Spacing.ItemGap,
-            ),
-        )
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(
+            start = Spacing.ScreenPadding,
+            end = Spacing.ScreenPadding,
+            top = Spacing.ContentInset,
+            bottom = Spacing.ItemGap,
+        ),
+    )
+}
+
+/** A run of kinds in one rounded card, inset dividers between rows. */
+@Composable
+private fun CatalogGroup(resources: List<ApiResource>, onOpen: (ApiResource) -> Unit) {
+    ListGroup {
+        resources.forEachIndexed { index, resource ->
+            if (index > 0) ListDivider()
+            CatalogRow(resource) { onOpen(resource) }
+        }
     }
 }
 
+/**
+ * One API group as its own card: the header row toggles, and when expanded the group's kinds unfold
+ * below it inside the same card.
+ */
 @Composable
-private fun GroupRow(
+private fun GroupCard(
     section: GroupSection,
+    resources: List<ApiResource>,
     expanded: Boolean,
     onToggle: () -> Unit,
+    onOpen: (ApiResource) -> Unit,
 ) {
-    ListItem(
-        headlineContent = {
-            Text(section.label, style = MaterialTheme.typography.bodyLarge, maxLines = 1)
-        },
-        supportingContent = {
-            SecondaryText(stringResource(R.string.browse_group_kinds, section.resources.size), maxLines = 1)
-        },
-        trailingContent = {
-            Icon(
-                imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        },
-        modifier = Modifier.clickable(onClick = onToggle),
-    )
+    ListGroup(Modifier.padding(vertical = Spacing.RowVertical)) {
+        ListItem(
+            headlineContent = {
+                Text(
+                    text = section.label,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            },
+            supportingContent = {
+                SecondaryText(stringResource(R.string.browse_group_kinds, section.resources.size), maxLines = 1)
+            },
+            trailingContent = {
+                Icon(
+                    imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            },
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            modifier = Modifier.clickable(onClick = onToggle),
+        )
+        if (expanded) {
+            resources.forEach { resource ->
+                ListDivider()
+                CatalogRow(resource) { onOpen(resource) }
+            }
+        }
+    }
 }
 
 @Composable
 private fun CatalogRow(resource: ApiResource, onClick: () -> Unit) {
     ListItem(
         headlineContent = {
-            Text(resource.kind, style = MaterialTheme.typography.bodyLarge, maxLines = 1)
+            Text(
+                text = resource.kind,
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         },
         supportingContent = {
             SecondaryText(resource.qualified, maxLines = 1)
         },
         trailingContent = {
             if (!resource.namespaced) {
-                // A small badge, not a word: cluster-scoped is the exception, so it is marked and
+                // A small pill, not a word: cluster-scoped is the exception, so it is marked and
                 // everything else stays quiet.
-                Text(
-                    text = stringResource(R.string.browse_cluster_scoped),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                InfoChip(label = stringResource(R.string.browse_cluster_scoped))
             }
         },
+        // Transparent so the row sits on its group's raised surface instead of painting over it.
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         modifier = Modifier.clickable(onClick = onClick),
     )
 }
@@ -579,8 +622,9 @@ private fun DashboardGrid(app: AppViewModel, navController: NavController) {
     )
     Column(
         Modifier.padding(
-            horizontal = Spacing.ScreenPadding,
-            vertical = Spacing.ContentInset,
+            start = Spacing.ScreenPadding,
+            end = Spacing.ScreenPadding,
+            top = Spacing.ContentInset,
         ),
     ) {
         Text(
@@ -591,34 +635,36 @@ private fun DashboardGrid(app: AppViewModel, navController: NavController) {
         )
         entries.chunked(2).forEach { row ->
             Row(
-                Modifier.fillMaxWidth(),
+                Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Max),
                 horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
             ) {
                 row.forEach { entry ->
+                    // Card's own onClick clips the ripple to the rounded corners; equal height per
+                    // row keeps a one-line body from leaving a ragged pair.
                     Card(
+                        onClick = { navController.navigateToTop(entry.route) },
                         modifier = Modifier
                             .weight(1f)
-                            .clickable { navController.navigateToTop(entry.route) },
+                            .fillMaxHeight(),
+                        shape = KubeShapes.Card,
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                         ),
                         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp,
-                            MaterialTheme.colorScheme.outlineVariant,
-                        ),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                     ) {
                         Column(Modifier.padding(Spacing.CardPadding)) {
-                            Icon(
-                                imageVector = entry.icon,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                            Spacer(Modifier.size(Spacing.ItemGap))
+                            IconTile(icon = entry.icon, size = 36.dp)
+                            Spacer(Modifier.size(Spacing.ChipPadding))
                             Text(
                                 text = stringResource(entry.titleRes),
                                 style = MaterialTheme.typography.titleSmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                             )
+                            Spacer(Modifier.size(2.dp))
                             SecondaryText(stringResource(entry.bodyRes), maxLines = 2)
                         }
                     }
@@ -763,6 +809,7 @@ private fun GroupFilterSheet(
                                 onCheckedChange = { onToggle(group) },
                             )
                         },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         modifier = Modifier.clickable { onToggle(group) },
                     )
                 }
@@ -792,6 +839,7 @@ private fun SheetOption(
         } else {
             null
         },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         modifier = Modifier.clickable(onClick = onClick),
     )
 }

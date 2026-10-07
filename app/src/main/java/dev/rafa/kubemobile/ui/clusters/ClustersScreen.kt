@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -30,6 +29,12 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material.icons.outlined.Dns
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
@@ -60,6 +65,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -81,11 +87,19 @@ import dev.rafa.kubemobile.ui.Routes
 import dev.rafa.kubemobile.ui.SessionState
 import dev.rafa.kubemobile.ui.UiError
 import dev.rafa.kubemobile.ui.shortLabel
+import dev.rafa.kubemobile.ui.KubeShapes
+import dev.rafa.kubemobile.ui.toneColors
+import dev.rafa.kubemobile.ops.ResourceHealth
+import dev.rafa.kubemobile.ui.components.IconTile
+import dev.rafa.kubemobile.ui.components.InlineBanner
+import dev.rafa.kubemobile.ui.components.ListGroup
 import dev.rafa.kubemobile.ui.components.ListDivider
+import dev.rafa.kubemobile.ui.components.RowCard
+import dev.rafa.kubemobile.ui.components.SectionCard
+import dev.rafa.kubemobile.ui.components.softFieldColors
 import dev.rafa.kubemobile.ui.components.EmptyState
 import dev.rafa.kubemobile.ui.components.BottomBarScreen
 import dev.rafa.kubemobile.ui.components.InfoChip
-import dev.rafa.kubemobile.ui.components.ToneDot
 import dev.rafa.kubemobile.ui.components.ErrorState
 import dev.rafa.kubemobile.ui.components.MenuAction
 import dev.rafa.kubemobile.ui.components.OverflowMenu
@@ -187,7 +201,7 @@ fun ClustersScreen(app: AppViewModel, navController: NavController) {
                 )
             } else {
                 LazyColumn(
-                    contentPadding = PaddingValues(bottom = ListBottomPadding),
+                    contentPadding = PaddingValues(top = Spacing.TopBarToContent, bottom = ListBottomPadding),
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     items(profiles, key = { it.id }) { profile ->
@@ -228,16 +242,25 @@ fun ClustersScreen(app: AppViewModel, navController: NavController) {
                             onDuplicate = { vm.duplicate(profile) },
                             onDelete = { pendingDelete = profile },
                         )
-                        ListDivider()
                     }
                     item {
-                        TextButton(
-                            onClick = { importOpen = true },
-                            modifier = Modifier.padding(horizontal = Spacing.ItemGap, vertical = Spacing.ItemGap),
+                        // Both ways in stay one tap away once the list has rows, side by side.
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.ContentInset),
                         ) {
-                            Icon(Icons.Filled.FileOpen, contentDescription = null)
-                            Spacer(Modifier.size(8.dp))
-                            Text(stringResource(R.string.action_import_kubeconfig))
+                            OutlinedButton(onClick = { importOpen = true }, modifier = Modifier.weight(1f)) {
+                                Icon(Icons.Filled.FileOpen, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.size(Spacing.ItemGap))
+                                Text(stringResource(R.string.action_import_kubeconfig), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                            OutlinedButton(onClick = { manualOpen = true }, modifier = Modifier.weight(1f)) {
+                                Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.size(Spacing.ItemGap))
+                                Text(stringResource(R.string.clusters_add_title), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
                         }
                     }
                 }
@@ -329,11 +352,23 @@ fun ClustersScreen(app: AppViewModel, navController: NavController) {
             sheetState = rememberModalBottomSheetState(),
         ) {
             Column(Modifier.padding(bottom = Spacing.SheetPadding)) {
-                Text(
-                    text = profile.name,
-                    style = MaterialTheme.typography.titleMedium,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(horizontal = Spacing.SheetPadding, vertical = Spacing.ItemGap),
-                )
+                ) {
+                    IconTile(icon = Icons.Outlined.Dns, tone = ResourceHealth.Tone.NEUTRAL)
+                    Spacer(Modifier.size(Spacing.ChipPadding))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            text = profile.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        SecondaryText(profile.endpointLabel(), maxLines = 1)
+                    }
+                }
+                Spacer(Modifier.size(Spacing.ItemGap))
                 SheetRow(stringResource(R.string.action_connect), Icons.Filled.Dns) {
                     actionSheetTarget = null
                     vm.connect(profile) { openSummary(profile.id) }
@@ -391,6 +426,7 @@ private fun SheetRow(
                 tint = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         },
+        colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
         modifier = Modifier.clickable(onClick = onClick),
     )
 }
@@ -399,7 +435,6 @@ private fun SheetRow(
 /* Rows                                                                                          */
 /* -------------------------------------------------------------------------------------------- */
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun ClusterRow(
     profile: ClusterProfile,
@@ -414,141 +449,114 @@ private fun ClusterRow(
     onDuplicate: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .combinedClickable(enabled = !isConnecting, onClick = onConnect, onLongClick = onLongPress)
-            .padding(end = Spacing.TightGap),
+    val tone = when {
+        isConnecting -> ResourceHealth.Tone.PROGRESS
+        isActive -> ResourceHealth.Tone.OK
+        error != null -> ResourceHealth.Tone.BAD
+        else -> ResourceHealth.Tone.NEUTRAL
+    }
+    RowCard(
+        onClick = onConnect,
+        onLongClick = onLongPress,
+        enabled = !isConnecting,
+        highlighted = isActive,
     ) {
-        ListItem(
-            // Two lines only: name, then `host:port · namespace`. Everything else is a trailing
-            // fact, so the list reads as a scannable column of clusters instead of a chip wall.
-            headlineContent = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.padding(start = Spacing.CardPadding, top = Spacing.ChipPadding, bottom = Spacing.CardPadding)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // The tile carries the state at a glance; the chip below spells it out, so
+                // "did my tap do anything?" never depends on colour alone.
+                Box(contentAlignment = Alignment.Center) {
+                    IconTile(icon = Icons.Outlined.Dns, tone = tone)
+                    if (isConnecting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(40.dp),
+                            strokeWidth = 2.dp,
+                            color = toneColors(tone).content,
+                        )
+                    }
+                }
+                Spacer(Modifier.size(Spacing.ChipPadding))
+                Column(Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = profile.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                        if (nameSuffix != null) {
+                            Spacer(Modifier.size(6.dp))
+                            Text(
+                                text = nameSuffix,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                            )
+                        }
+                    }
+                    Spacer(Modifier.size(2.dp))
                     Text(
-                        text = profile.name,
-                        style = MaterialTheme.typography.titleSmall,
+                        text = profile.endpointLabel(),
+                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false),
-                    )
-                    if (nameSuffix != null) {
-                        Spacer(Modifier.size(6.dp))
-                        Text(
-                            text = nameSuffix,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                        )
-                    }
-                }
-            },
-            supportingContent = {
-                Column {
-                    SecondaryText(text = profile.endpointLabel(), maxLines = 1)
-                    Spacer(Modifier.size(4.dp))
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        // The connection state is spelled out, not implied by a dot colour, so
-                        // "did my tap do anything?" is always answerable from the row itself.
-                        InfoChip(
-                            label = when {
-                                isConnecting -> stringResource(R.string.clusters_state_connecting)
-                                isActive -> stringResource(R.string.clusters_state_connected)
-                                error != null -> stringResource(R.string.clusters_state_failed)
-                                else -> stringResource(R.string.clusters_state_idle)
-                            },
-                            tone = when {
-                                isConnecting -> dev.rafa.kubemobile.ops.ResourceHealth.Tone.PROGRESS
-                                isActive -> dev.rafa.kubemobile.ops.ResourceHealth.Tone.OK
-                                error != null -> dev.rafa.kubemobile.ops.ResourceHealth.Tone.BAD
-                                else -> dev.rafa.kubemobile.ops.ResourceHealth.Tone.NEUTRAL
-                            },
-                        )
-                        InfoChip(profile.authKind.shortLabel)
-                        if (profile.insecureSkipTlsVerify) {
-                            InfoChip(
-                                label = stringResource(R.string.settings_tls_insecure),
-                                tone = dev.rafa.kubemobile.ops.ResourceHealth.Tone.WARN,
-                            )
-                        }
-                        if (profile.execCommand != null || profile.authProvider != null) {
-                            InfoChip(
-                                label = stringResource(R.string.label_warnings),
-                                tone = dev.rafa.kubemobile.ops.ResourceHealth.Tone.WARN,
-                            )
-                        }
-                    }
-                }
-            },
-            leadingContent = {
-                when {
-                    isConnecting -> CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                    isActive -> ToneDot(
-                        tone = dev.rafa.kubemobile.ops.ResourceHealth.Tone.OK,
-                        size = 10.dp,
-                    )
-
-                    error != null -> ToneDot(
-                        tone = dev.rafa.kubemobile.ops.ResourceHealth.Tone.BAD,
-                        size = 10.dp,
-                    )
-
-                    else -> ToneDot(
-                        tone = dev.rafa.kubemobile.ops.ResourceHealth.Tone.NEUTRAL,
-                        size = 10.dp,
                     )
                 }
-            },
-            trailingContent = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    OverflowMenu(
-                        actions = listOf(
-                            MenuAction(stringResource(R.string.action_connect), onConnect),
-                            MenuAction(stringResource(R.string.action_set_active), onSetActive),
-                            MenuAction(stringResource(R.string.action_edit_namespace), onEditNamespace),
-                            MenuAction(stringResource(R.string.action_duplicate), onDuplicate),
-                            MenuAction(
-                                label = stringResource(R.string.action_delete),
-                                onClick = onDelete,
-                                destructive = true,
-                            ),
+                OverflowMenu(
+                    actions = listOf(
+                        MenuAction(stringResource(R.string.action_connect), onConnect, leadingIcon = Icons.Filled.Dns),
+                        MenuAction(stringResource(R.string.action_set_active), onSetActive, leadingIcon = Icons.Filled.Star),
+                        MenuAction(stringResource(R.string.action_edit_namespace), onEditNamespace, leadingIcon = Icons.Filled.Edit),
+                        MenuAction(stringResource(R.string.action_duplicate), onDuplicate, leadingIcon = Icons.Filled.ContentCopy),
+                        MenuAction(
+                            label = stringResource(R.string.action_delete),
+                            onClick = onDelete,
+                            destructive = true,
+                            leadingIcon = Icons.Filled.Delete,
                         ),
+                    ),
+                )
+            }
+            Spacer(Modifier.size(Spacing.ChipPadding))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(end = Spacing.CardPadding),
+            ) {
+                InfoChip(
+                    label = when {
+                        isConnecting -> stringResource(R.string.clusters_state_connecting)
+                        isActive -> stringResource(R.string.clusters_state_connected)
+                        error != null -> stringResource(R.string.clusters_state_failed)
+                        else -> stringResource(R.string.clusters_state_idle)
+                    },
+                    tone = tone,
+                )
+                InfoChip(profile.authKind.shortLabel)
+                if (profile.insecureSkipTlsVerify) {
+                    InfoChip(
+                        label = stringResource(R.string.settings_tls_insecure),
+                        tone = ResourceHealth.Tone.WARN,
                     )
                 }
-            },
-        )
-        if (error != null) {
-            Surface(
-                color = MaterialTheme.colorScheme.errorContainer,
-                contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = Spacing.RowVertical),
-            ) {
-                Row(
-                    Modifier.padding(Spacing.CardPadding),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(error.titleRes),
-                            style = MaterialTheme.typography.labelLarge,
-                        )
-                        Spacer(Modifier.size(Spacing.TightGap))
-                        Text(
-                            text = error.message,
-                            style = MaterialTheme.typography.bodySmall,
-                            maxLines = 3,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    TextButton(onClick = onConnect) {
-                        Text(stringResource(R.string.action_retry_connect))
-                    }
+                if (profile.execCommand != null || profile.authProvider != null) {
+                    InfoChip(
+                        label = stringResource(R.string.label_warnings),
+                        tone = ResourceHealth.Tone.WARN,
+                    )
                 }
+            }
+            if (error != null) {
+                Spacer(Modifier.size(Spacing.ChipPadding))
+                InlineBanner(
+                    title = stringResource(error.titleRes),
+                    message = error.message,
+                    actionLabel = stringResource(R.string.action_retry_connect),
+                    onAction = onConnect,
+                    modifier = Modifier.padding(end = Spacing.CardPadding),
+                )
             }
         }
     }
@@ -594,15 +602,15 @@ private fun ImportSheet(
                 text = stringResource(R.string.clusters_import_title),
                 style = MaterialTheme.typography.titleLarge,
             )
-            Spacer(Modifier.size(4.dp))
+            Spacer(Modifier.size(Spacing.TightGap))
             SecondaryText(stringResource(R.string.clusters_import_body))
-            Spacer(Modifier.size(12.dp))
-            OutlinedButton(shape = RectangleShape, onClick = onPickFile, modifier = Modifier.fillMaxWidth()) {
+            Spacer(Modifier.size(Spacing.ChipPadding))
+            FilledTonalButton(onClick = onPickFile, modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.Filled.FileOpen, contentDescription = null)
-                Spacer(Modifier.size(8.dp))
+                Spacer(Modifier.size(Spacing.ItemGap))
                 Text(stringResource(R.string.clusters_import_file))
             }
-            Spacer(Modifier.size(12.dp))
+            Spacer(Modifier.size(Spacing.ChipPadding))
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },
@@ -610,10 +618,11 @@ private fun ImportSheet(
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 6,
                 textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 12.sp),
+                shape = KubeShapes.Field,
+                colors = softFieldColors(),
             )
-            Spacer(Modifier.size(8.dp))
+            Spacer(Modifier.size(Spacing.ItemGap))
             Button(
-                shape = RectangleShape,
                 onClick = { onPaste(text) },
                 enabled = text.isNotBlank(),
                 modifier = Modifier.fillMaxWidth(),
@@ -623,28 +632,28 @@ private fun ImportSheet(
 
             when (state) {
                 ImportState.Parsing -> {
-                    Spacer(Modifier.size(16.dp))
+                    Spacer(Modifier.size(Spacing.ContentInset))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                        Spacer(Modifier.size(12.dp))
+                        Spacer(Modifier.size(Spacing.ChipPadding))
                         Text(stringResource(R.string.state_loading))
                     }
                 }
 
                 is ImportState.Error -> {
-                    Spacer(Modifier.size(16.dp))
+                    Spacer(Modifier.size(Spacing.ContentInset))
                     ErrorState(error = state.error)
                 }
 
                 is ImportState.Ready -> {
-                    Spacer(Modifier.size(16.dp))
+                    Spacer(Modifier.size(Spacing.ContentInset))
                     if (state.candidates.isEmpty()) {
                         Text(
                             text = stringResource(R.string.clusters_import_failed),
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodyMedium,
                         )
-                        Spacer(Modifier.size(8.dp))
+                        Spacer(Modifier.size(Spacing.ItemGap))
                     } else {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
@@ -674,13 +683,16 @@ private fun ImportSheet(
                                         onCheckedChange = { onToggle(candidate.profile.id) },
                                     )
                                 },
-                                modifier = Modifier.clickable { onToggle(candidate.profile.id) },
+                                colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
+                                modifier = Modifier
+                                    .clip(KubeShapes.Field)
+                                    .clickable { onToggle(candidate.profile.id) },
                             )
                         }
                     }
 
                     if (state.warnings.isNotEmpty()) {
-                        Spacer(Modifier.size(12.dp))
+                        Spacer(Modifier.size(Spacing.ChipPadding))
                         SectionHeader(stringResource(R.string.label_warnings))
                         state.warnings.forEach { warning ->
                             Row(
@@ -698,10 +710,9 @@ private fun ImportSheet(
                     }
 
                     if (state.candidates.isNotEmpty()) {
-                        Spacer(Modifier.size(16.dp))
+                        Spacer(Modifier.size(Spacing.ContentInset))
                         val selectedCount = state.candidates.count { it.selected }
                         Button(
-                            shape = RectangleShape,
                             onClick = onConfirm,
                             enabled = selectedCount > 0,
                             modifier = Modifier.fillMaxWidth(),
@@ -721,7 +732,7 @@ private fun ImportSheet(
 /* Manual entry                                                                                  */
 /* -------------------------------------------------------------------------------------------- */
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun ManualClusterDialog(
     onDismiss: () -> Unit,
@@ -790,9 +801,9 @@ private fun ManualClusterDialog(
                         .padding(horizontal = Spacing.SheetPadding)
                         .padding(bottom = 48.dp),
                 ) {
-                    Spacer(Modifier.size(8.dp))
+                    Spacer(Modifier.size(Spacing.ItemGap))
                     TextFieldRow(name, { name = it }, stringResource(R.string.clusters_field_name))
-                    Spacer(Modifier.size(8.dp))
+                    Spacer(Modifier.size(Spacing.ItemGap))
                     TextFieldRow(
                         value = server,
                         onValueChange = { server = it },
@@ -800,27 +811,39 @@ private fun ManualClusterDialog(
                         keyboardType = KeyboardType.Uri,
                         placeholder = "https://10.0.0.1:6443",
                     )
-                    Spacer(Modifier.size(8.dp))
+                    Spacer(Modifier.size(Spacing.ItemGap))
                     TextFieldRow(
                         value = namespace,
                         onValueChange = { namespace = it },
                         label = stringResource(R.string.clusters_field_namespace),
                     )
 
-                    SectionHeader(stringResource(R.string.clusters_section_auth))
-                    Column(Modifier.padding(horizontal = Spacing.ItemGap)) {
+                    Spacer(Modifier.size(Spacing.SectionGap))
+                    Text(
+                        text = stringResource(R.string.clusters_section_auth),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.size(Spacing.ItemGap))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
+                    ) {
                         AuthKind.entries.forEach { kind ->
-                            ListItem(
-                                headlineContent = { Text(authKindLabel(kind)) },
-                                leadingContent = {
-                                    RadioButton(selected = authKind == kind, onClick = { authKind = kind })
-                                },
-                                modifier = Modifier.clickable { authKind = kind },
+                            FilterChip(
+                                selected = authKind == kind,
+                                onClick = { authKind = kind },
+                                label = { Text(authKindLabel(kind)) },
+                                shape = KubeShapes.Pill,
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    selectedLabelColor = MaterialTheme.colorScheme.primary,
+                                ),
                             )
                         }
                     }
 
-                    Spacer(Modifier.size(8.dp))
+                    Spacer(Modifier.size(Spacing.ItemGap))
                     when (authKind) {
                         AuthKind.TOKEN -> OutlinedTextField(
                             value = token,
@@ -829,11 +852,13 @@ private fun ManualClusterDialog(
                             modifier = Modifier.fillMaxWidth(),
                             minLines = 2,
                             textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 12.sp),
+                            shape = KubeShapes.Field,
+                            colors = softFieldColors(),
                         )
 
                         AuthKind.BASIC -> {
                             TextFieldRow(username, { username = it }, stringResource(R.string.clusters_field_username))
-                            Spacer(Modifier.size(8.dp))
+                            Spacer(Modifier.size(Spacing.ItemGap))
                             TextFieldRow(
                                 value = password,
                                 onValueChange = { password = it },
@@ -843,34 +868,38 @@ private fun ManualClusterDialog(
 
                         AuthKind.CLIENT_CERT -> {
                             PemField(cert, { cert = it }, stringResource(R.string.clusters_field_cert))
-                            Spacer(Modifier.size(8.dp))
+                            Spacer(Modifier.size(Spacing.ItemGap))
                             PemField(key, { key = it }, stringResource(R.string.clusters_field_key))
                         }
 
                         AuthKind.NONE -> Unit
                     }
 
-                    Spacer(Modifier.size(12.dp))
-                    ListItem(
-                        headlineContent = { Text(stringResource(R.string.clusters_insecure)) },
-                        trailingContent = {
-                            Switch(checked = insecure, onCheckedChange = { insecure = it })
-                        },
-                    )
+                    Spacer(Modifier.size(Spacing.SectionGap))
+                    SectionCard {
+                        ListItem(
+                            headlineContent = { Text(stringResource(R.string.clusters_insecure)) },
+                            trailingContent = {
+                                Switch(checked = insecure, onCheckedChange = { insecure = it })
+                            },
+                            colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
+                            modifier = Modifier.clickable { insecure = !insecure },
+                        )
+                    }
 
-                    Spacer(Modifier.size(8.dp))
+                    Spacer(Modifier.size(Spacing.ItemGap))
                     PemField(ca, { ca = it }, stringResource(R.string.clusters_field_ca))
 
                     if (!valid) {
-                        Spacer(Modifier.size(12.dp))
+                        Spacer(Modifier.size(Spacing.ChipPadding))
                         Text(
                             text = stringResource(R.string.clusters_invalid),
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }
-                    Spacer(Modifier.size(24.dp))
-                    FilledTonalButton(shape = RectangleShape, 
+                    Spacer(Modifier.size(Spacing.SectionGap))
+                    Button(
                         onClick = { onSave(build()) },
                         enabled = valid,
                         modifier = Modifier.fillMaxWidth(),
@@ -900,6 +929,8 @@ private fun PemField(value: String, onValueChange: (String) -> Unit, label: Stri
         modifier = Modifier.fillMaxWidth(),
         minLines = 3,
         textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 11.sp),
+        shape = KubeShapes.Field,
+        colors = softFieldColors(),
     )
 }
 
@@ -920,7 +951,7 @@ private fun NamespaceDialog(
         text = {
             Column {
                 Text(stringResource(R.string.clusters_namespace_body, profile.name))
-                Spacer(Modifier.size(12.dp))
+                Spacer(Modifier.size(Spacing.ChipPadding))
                 TextFieldRow(value, { value = it }, stringResource(R.string.label_namespace))
             }
         },

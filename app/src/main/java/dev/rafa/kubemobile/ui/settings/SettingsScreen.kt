@@ -29,7 +29,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -37,6 +36,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -45,6 +46,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
@@ -59,13 +61,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import dev.rafa.kubemobile.R
 import dev.rafa.kubemobile.config.ClusterProfile
+import dev.rafa.kubemobile.ops.ResourceHealth
+import dev.rafa.kubemobile.ui.KubeShapes
 import dev.rafa.kubemobile.ui.Spacing
+import dev.rafa.kubemobile.ui.cardGutter
 import dev.rafa.kubemobile.ui.ListBottomPadding
 import dev.rafa.kubemobile.ui.AppViewModel
 import dev.rafa.kubemobile.ui.Routes
@@ -73,7 +80,9 @@ import dev.rafa.kubemobile.ui.SessionState
 import dev.rafa.kubemobile.ui.components.BottomBarScreen
 import dev.rafa.kubemobile.ui.components.EmptyState
 import dev.rafa.kubemobile.ui.components.ErrorState
+import dev.rafa.kubemobile.ui.components.IconTile
 import dev.rafa.kubemobile.ui.components.KeyValueRow
+import dev.rafa.kubemobile.ui.components.ListGroup
 import dev.rafa.kubemobile.ui.components.LoadingState
 import dev.rafa.kubemobile.ui.components.SectionCard
 import dev.rafa.kubemobile.ui.navigateToTop
@@ -149,6 +158,10 @@ fun SettingsScreen(app: AppViewModel, navController: NavController) {
         ?: profiles.firstOrNull()
     val session = (sessionState as? SessionState.Ready)?.session
 
+    // List rows inside section cards sit on the card's own surface
+    // instead of painting a different-coloured band across it.
+    val transparentRow = ListItemDefaults.colors(containerColor = Color.Transparent)
+
     BottomBarScreen(
         topBar = {
             TopAppBar(
@@ -175,11 +188,15 @@ fun SettingsScreen(app: AppViewModel, navController: NavController) {
                     onRetry = { app.connectInBackground(profile) },
                 )
 
-                else -> LazyColumn(contentPadding = PaddingValues(bottom = ListBottomPadding)) {
+                // Every section is a rounded card one gutter in from the edges, stacked on an
+                // 8 dp rhythm (4 dp above and below each).
+                else -> LazyColumn(
+                    contentPadding = PaddingValues(top = Spacing.TopBarToContent, bottom = ListBottomPadding),
+                ) {
                     item {
                         SectionCard(
                             title = stringResource(R.string.label_cluster_info),
-                            modifier = Modifier.padding(vertical = Spacing.RowVertical),
+                            modifier = Modifier.cardGutter(),
                         ) {
                             KeyValueRow(stringResource(R.string.label_name), profile.name, copyable = true)
                             KeyValueRow(stringResource(R.string.label_server), profile.baseUrl, copyable = true)
@@ -215,23 +232,32 @@ fun SettingsScreen(app: AppViewModel, navController: NavController) {
                     }
 
                     item {
-                        ListItem(
-                            modifier = Modifier.padding(vertical = Spacing.RowVertical),
-                            headlineContent = { Text(stringResource(R.string.label_insecure_tls)) },
-                            supportingContent = {
-                                dev.rafa.kubemobile.ui.components.SecondaryText(
-                                    stringResource(R.string.settings_persist_hint),
-                                )
-                            },
-                            trailingContent = {
-                                Switch(
-                                    checked = profile.insecureSkipTlsVerify,
-                                    onCheckedChange = { value ->
-                                        app.updateTlsVerification(profile, value)
-                                    },
-                                )
-                            },
-                        )
+                        ListGroup(modifier = Modifier.padding(vertical = Spacing.RowVertical)) {
+                            ListItem(
+                                colors = transparentRow,
+                                leadingContent = {
+                                    // The tile mirrors the switch: amber and unlocked while
+                                    // certificate verification is off.
+                                    if (profile.insecureSkipTlsVerify) {
+                                        IconTile(Icons.Filled.LockOpen, tone = ResourceHealth.Tone.WARN)
+                                    } else {
+                                        IconTile(Icons.Filled.Lock, tone = ResourceHealth.Tone.OK)
+                                    }
+                                },
+                                headlineContent = { Text(stringResource(R.string.label_insecure_tls)) },
+                                supportingContent = {
+                                    SecondaryText(stringResource(R.string.settings_persist_hint))
+                                },
+                                trailingContent = {
+                                    Switch(
+                                        checked = profile.insecureSkipTlsVerify,
+                                        onCheckedChange = { value ->
+                                            app.updateTlsVerification(profile, value)
+                                        },
+                                    )
+                                },
+                            )
+                        }
                     }
 
                     profile.execCommand?.let { command ->
@@ -252,7 +278,7 @@ fun SettingsScreen(app: AppViewModel, navController: NavController) {
                     item {
                         SectionCard(
                             title = stringResource(R.string.settings_diagnostics),
-                            modifier = Modifier.padding(vertical = Spacing.RowVertical),
+                            modifier = Modifier.cardGutter(),
                         ) {
                             KeyValueRow(
                                 stringResource(R.string.label_catalog),
@@ -270,20 +296,25 @@ fun SettingsScreen(app: AppViewModel, navController: NavController) {
                     }
 
                     item {
-                        Column(Modifier.padding(horizontal = Spacing.RowPadding, vertical = Spacing.ItemGap)) {
-                            FilledTonalButton(shape = RectangleShape, 
+                        // Primary action first; the destructive one is quieter and sits below it.
+                        Column(Modifier.padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.ItemGap)) {
+                            FilledTonalButton(
                                 onClick = { app.reloadDiscovery() },
                                 enabled = session != null,
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
                                 Icon(Icons.Filled.Dns, contentDescription = null, Modifier.size(18.dp))
-                                Spacer(Modifier.size(8.dp))
+                                Spacer(Modifier.size(Spacing.ItemGap))
                                 Text(stringResource(R.string.action_reload_discovery))
                             }
-                            Spacer(Modifier.size(8.dp))
-                            OutlinedButton(shape = RectangleShape, 
+                            Spacer(Modifier.size(Spacing.ItemGap))
+                            OutlinedButton(
                                 onClick = { forgetOpen = true },
                                 modifier = Modifier.fillMaxWidth(),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.error.copy(alpha = 0.4f),
+                                ),
                             ) {
                                 Text(
                                     text = stringResource(R.string.action_forget_cluster),
@@ -296,16 +327,14 @@ fun SettingsScreen(app: AppViewModel, navController: NavController) {
                     item {
                         SectionCard(
                             title = stringResource(R.string.label_about),
-                            modifier = Modifier.padding(vertical = Spacing.RowVertical),
+                            modifier = Modifier.cardGutter(),
                         ) {
-                            Row(Modifier.padding(horizontal = Spacing.CardPadding, vertical = Spacing.ItemGap)) {
-                                Icon(
-                                    imageVector = Icons.Filled.Lock,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp),
-                                )
-                                Spacer(Modifier.size(12.dp))
+                            Row(
+                                Modifier.padding(horizontal = Spacing.CardPadding, vertical = Spacing.ItemGap),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                IconTile(Icons.Filled.Lock)
+                                Spacer(Modifier.size(Spacing.ChipPadding))
                                 Text(
                                     text = stringResource(R.string.settings_about_body),
                                     style = MaterialTheme.typography.bodySmall,
@@ -317,10 +346,12 @@ fun SettingsScreen(app: AppViewModel, navController: NavController) {
                     item {
                         SectionCard(
                             title = "Updates",
-                            modifier = Modifier.padding(vertical = Spacing.RowVertical),
+                            modifier = Modifier.cardGutter(),
                         ) {
                             KeyValueRow("Version", BuildConfig.VERSION_NAME)
                             ListItem(
+                                colors = transparentRow,
+                                leadingContent = { IconTile(Icons.Filled.SystemUpdate) },
                                 modifier = Modifier.clickable(
                                     enabled = updateState !is UpdateState.Checking && updateState !is UpdateState.Downloading,
                                 ) {
@@ -438,7 +469,9 @@ fun SettingsScreen(app: AppViewModel, navController: NavController) {
                             Spacer(Modifier.size(Spacing.ItemGap))
                             LinearProgressIndicator(
                                 progress = { s.progress },
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(KubeShapes.Pill),
                             )
                             Spacer(Modifier.size(Spacing.TightGap))
                             Text("Downloading: ${(s.progress * 100).toInt()}%", style = MaterialTheme.typography.bodySmall)
@@ -530,25 +563,21 @@ private fun WarningCard(text: String) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.RowVertical),
+            .cardGutter(),
+        shape = KubeShapes.Card,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         border = androidx.compose.foundation.BorderStroke(
             1.dp,
-            MaterialTheme.colorScheme.error.copy(alpha = 0.5f),
+            MaterialTheme.colorScheme.error.copy(alpha = 0.25f),
         ),
     ) {
         Row(
             Modifier.padding(Spacing.CardPadding),
             verticalAlignment = Alignment.Top,
         ) {
-            Icon(
-                imageVector = Icons.Filled.Warning,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onErrorContainer,
-                modifier = Modifier.size(20.dp),
-            )
-            Spacer(Modifier.size(12.dp))
+            IconTile(Icons.Filled.Warning, tone = ResourceHealth.Tone.BAD, size = 32.dp)
+            Spacer(Modifier.size(Spacing.ChipPadding))
             Text(
                 text = text,
                 style = MaterialTheme.typography.bodySmall,

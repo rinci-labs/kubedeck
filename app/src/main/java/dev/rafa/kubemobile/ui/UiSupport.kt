@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -118,6 +119,18 @@ object Spacing {
     /** The horizontal inset a list divider keeps on both sides, so it aligns with row content. */
     val DividerPadding = RowPadding
 }
+
+/**
+ * The one gutter every standalone card sits in: the 16 dp screen inset on both sides and half the
+ * 8 dp stacking rhythm above and below, so two cards in a column are always 8 dp apart.
+ */
+fun androidx.compose.ui.Modifier.cardGutter(): androidx.compose.ui.Modifier =
+    this.then(
+        androidx.compose.ui.Modifier.padding(
+            horizontal = Spacing.ScreenPadding,
+            vertical = Spacing.RowVertical,
+        ),
+    )
 
 /* -------------------------------------------------------------------------------------------- */
 /* Window insets                                                                                 */

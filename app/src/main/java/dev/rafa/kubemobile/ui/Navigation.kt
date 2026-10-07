@@ -210,12 +210,11 @@ fun KubeApp(app: AppViewModel) {
             // bar's labels inside the gesture area on the first frames.
             if (showBottomBar) {
                 Column {
-                    // Rinci rule: a hairline separates the bar from content, the selected item is
-                    // the mint signal, and the Material pill indicator is removed so the bar reads
-                    // as a flat ruled strip rather than five floating lozenges.
+                    // Mirrors the site preview's tab bar: a hairline over a raised strip, and the
+                    // selected destination sits in a soft mint pill.
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     NavigationBar(
-                        containerColor = MaterialTheme.colorScheme.surface,
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                         tonalElevation = 0.dp,
                     ) {
                         TopDestination.entries.forEach { destination ->
@@ -241,8 +240,8 @@ fun KubeApp(app: AppViewModel) {
                                 },
                                 colors = NavigationBarItemDefaults.colors(
                                     selectedIconColor = MaterialTheme.colorScheme.primary,
-                                    selectedTextColor = MaterialTheme.colorScheme.primary,
-                                    indicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                                    selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
                                     unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                     unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                 ),

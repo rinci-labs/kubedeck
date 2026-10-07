@@ -1,5 +1,6 @@
 package dev.rafa.kubemobile.ui.clusters
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,6 +22,7 @@ import androidx.compose.material.icons.filled.AccountTree
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Hub
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,14 +40,20 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import dev.rafa.kubemobile.R
 import dev.rafa.kubemobile.ops.ResourceHealth
+import dev.rafa.kubemobile.ui.KubeShapes
 import dev.rafa.kubemobile.ui.ListBottomPadding
 import dev.rafa.kubemobile.ui.Spacing
 import dev.rafa.kubemobile.ui.AppViewModel
@@ -55,6 +63,8 @@ import dev.rafa.kubemobile.ui.SessionState
 import dev.rafa.kubemobile.ui.components.BottomBarScreen
 import dev.rafa.kubemobile.ui.components.ErrorState
 import dev.rafa.kubemobile.ui.components.HealthChip
+import dev.rafa.kubemobile.ui.components.IconTile
+import dev.rafa.kubemobile.ui.components.InfoChip
 import dev.rafa.kubemobile.ui.components.LoadingState
 import dev.rafa.kubemobile.ui.components.SectionCard
 import dev.rafa.kubemobile.ui.components.SecondaryText
@@ -64,6 +74,7 @@ import dev.rafa.kubemobile.ui.hostPort
 import dev.rafa.kubemobile.ui.humanBytes
 import dev.rafa.kubemobile.ui.navigateToTop
 import dev.rafa.kubemobile.ui.screenViewModel
+import dev.rafa.kubemobile.ui.toneColors
 import dev.rafa.kubemobile.ui.toUiError
 
 /**
@@ -193,44 +204,39 @@ private fun ClusterHeaderCard(
                 end = Spacing.ScreenPadding,
                 top = Spacing.ContentInset,
             ),
+        shape = KubeShapes.Card,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.outlineVariant,
-        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
+        // Name and connection pill on one line, then the endpoint and version underneath, the
+        // same order the landing site's summary card reads in.
         Column(Modifier.padding(Spacing.CardPadding)) {
-            Text(
-                text = name,
-                style = MaterialTheme.typography.titleLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Spacer(Modifier.size(Spacing.TightGap))
-            SecondaryText(server, maxLines = 1)
-            Spacer(Modifier.size(Spacing.ItemGap))
             Row(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.titleLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
                 HealthChip(sessionHealth(state))
-                if (!version.isNullOrBlank()) {
-                    Text(
-                        text = stringResource(R.string.summary_k8s_version, version),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                    )
-                } else {
-                    Text(
-                        text = stringResource(R.string.summary_version_unknown),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                    )
-                }
             }
+            Spacer(Modifier.size(Spacing.TightGap))
+            SecondaryText(server, maxLines = 1)
+            Text(
+                text = if (!version.isNullOrBlank()) {
+                    stringResource(R.string.summary_k8s_version, version)
+                } else {
+                    stringResource(R.string.summary_version_unknown)
+                },
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
         }
     }
 }
@@ -276,20 +282,19 @@ private fun StatGrid(state: ClusterSummaryState) {
     }
 }
 
+/** A compact count tile on the muted surface, like the site's `Card variant="muted"`. */
 @Composable
 private fun StatTileView(tile: StatTile, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        shape = MaterialTheme.shapes.small,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.outlineVariant,
-        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
-        Column(Modifier.padding(Spacing.CardPadding)) {
+        Column(Modifier.padding(Spacing.ChipPadding)) {
             Text(
-                text = statValue(tile),
+                text = statValue(tile, MaterialTheme.colorScheme.onSurfaceVariant),
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
@@ -306,11 +311,17 @@ private fun StatTileView(tile: StatTile, modifier: Modifier = Modifier) {
     }
 }
 
-/** `3/3`, `12`, or `—` when the count is genuinely not computable. */
-private fun statValue(tile: StatTile): String {
-    val value = tile.value ?: return "—"
-    val total = tile.total ?: return value.toString()
-    return "$value/$total"
+/**
+ * `3/3`, `12`, or `—` when the count is genuinely not computable. The `/total` part is muted so the
+ * live number is what the eye lands on.
+ */
+private fun statValue(tile: StatTile, muted: androidx.compose.ui.graphics.Color): AnnotatedString {
+    val value = tile.value ?: return AnnotatedString("—")
+    val total = tile.total ?: return AnnotatedString(value.toString())
+    return buildAnnotatedString {
+        append(value.toString())
+        withStyle(SpanStyle(color = muted)) { append("/$total") }
+    }
 }
 
 /* -------------------------------------------------------------------------------------------- */
@@ -390,10 +401,12 @@ private fun UsageRow(label: String, used: String, total: String, fraction: Float
                 progress = { fraction },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(8.dp),
+                    .height(8.dp)
+                    .clip(KubeShapes.Pill),
+                trackColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             )
         } else {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.size(Spacing.ItemGap))
         }
     }
 }
@@ -492,13 +505,13 @@ private fun AttentionRow(count: Long?, label: String) {
             modifier = Modifier.weight(1f),
             maxLines = 1,
         )
-        Text(
-            text = count?.toString() ?: "—",
-            style = MaterialTheme.typography.titleSmall,
-            color = if (positive) {
-                MaterialTheme.colorScheme.error
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
+        // The count rides on a soft pill: amber when something is wrong, mint when clear.
+        InfoChip(
+            label = count?.toString() ?: "—",
+            tone = when {
+                !resolved -> ResourceHealth.Tone.NEUTRAL
+                positive -> ResourceHealth.Tone.WARN
+                else -> ResourceHealth.Tone.OK
             },
         )
     }
@@ -506,6 +519,7 @@ private fun AttentionRow(count: Long?, label: String) {
 
 @Composable
 private fun WarningEventRow(event: AttentionEvent, onClick: () -> Unit) {
+    // The card clips to its rounded shape, so this row's ripple stays inside the corners.
     Column(
         Modifier
             .fillMaxWidth()
@@ -515,13 +529,22 @@ private fun WarningEventRow(event: AttentionEvent, onClick: () -> Unit) {
                 vertical = Spacing.ItemGap,
             ),
     ) {
-        Text(
-            text = event.reason,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.error,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Filled.Warning,
+                contentDescription = null,
+                tint = toneColors(ResourceHealth.Tone.WARN).content,
+                modifier = Modifier.size(16.dp),
+            )
+            Spacer(Modifier.size(Spacing.ItemGap))
+            Text(
+                text = event.reason,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.error,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
         SecondaryText(
             listOfNotNull(
                 event.involvedKind.takeIf { it.isNotBlank() }?.let {
@@ -565,11 +588,12 @@ private fun QuickLinks(
             top = Spacing.ContentInset,
         ),
     ) {
+        // A quiet section label, like every other section title on the screen.
         Text(
             text = stringResource(R.string.summary_quick_links),
             style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(bottom = Spacing.ItemGap),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = Spacing.TightGap, bottom = Spacing.ItemGap),
         )
         Row(
             Modifier.fillMaxWidth(),
@@ -596,25 +620,23 @@ private fun QuickLinks(
 
 @Composable
 private fun QuickLink(entry: LinkEntry, modifier: Modifier = Modifier) {
+    // Card's own onClick clips the ripple to the rounded corners; a clickable modifier would not.
     Card(
-        modifier = modifier.clickable(onClick = entry.onClick),
+        onClick = entry.onClick,
+        modifier = modifier,
+        shape = KubeShapes.Card,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.outlineVariant,
-        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Column(
-            Modifier.padding(Spacing.CardPadding),
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = Spacing.ChipPadding, horizontal = Spacing.ItemGap),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Icon(
-                imageVector = entry.icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(Modifier.size(Spacing.TightGap))
+            IconTile(icon = entry.icon, size = 36.dp)
+            Spacer(Modifier.size(Spacing.ItemGap))
             Text(
                 text = stringResource(entry.labelRes),
                 style = MaterialTheme.typography.labelMedium,
