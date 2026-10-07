@@ -20,7 +20,7 @@ import SyncCard from "./SyncCard.astro"
         class="group inline-flex items-center gap-2 rounded-full border border-border bg-card py-1 pl-1 pr-3 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground motion-safe:animate-rise"
       >
         <span class="rounded-full bg-success-soft px-2 py-0.5 font-medium text-primary">New</span>
-        {isFirstRelease ? "First release" : "Latest release"}, v{version}
+        <span data-release-label>{isFirstRelease ? "First release" : "Latest release"}</span>, v<span data-release-version>{version}</span>
         <ArrowRight aria-hidden="true" className="size-3 transition-transform group-hover:translate-x-0.5" />
       </a>
       <h1 id="hero-title" class="mt-7 text-balance text-5xl font-semibold leading-[1.02] tracking-tighter motion-safe:animate-rise motion-safe:[animation-delay:80ms] sm:text-6xl lg:text-7xl">

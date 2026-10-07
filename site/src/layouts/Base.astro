@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css"
+import { apkUrl, releaseUrl, repository, version } from "../config/site"
 
 interface Props {
   title?: string
@@ -45,5 +46,29 @@ const ogImageAlt = "KubeDeck: Your cluster, where you are. Open-source Kubernete
   </head>
   <body>
     <slot />
+    <script is:inline define:vars={{ builtVersion: version, builtApkUrl: apkUrl, builtReleaseUrl: releaseUrl, repository }}>
+      // The page is static, so a release published after the last deploy would leave every link on
+      // the build-time version. Ask GitHub for the newest release in the browser and repoint them.
+      fetch("https://api.github.com/repos/rinci-labs/kubedeck/releases/latest", {
+        headers: { Accept: "application/vnd.github+json" },
+      })
+        .then((response) => (response.ok ? response.json() : null))
+        .then((release) => {
+          const tag = release && release.tag_name
+          if (!tag || !/^v\d+\.\d+\.\d+$/.test(tag)) return
+          const latest = tag.slice(1)
+          if (latest === builtVersion) return
+          const apk = (release.assets || []).find((asset) => asset.name.endsWith(".apk"))
+          const apkUrl = apk ? apk.browser_download_url : `${repository}/releases/download/${tag}/KubeDeck-${tag}.apk`
+          const releaseUrl = release.html_url || `${repository}/releases/tag/${tag}`
+          document.querySelectorAll("a").forEach((link) => {
+            if (link.href === builtApkUrl) link.href = apkUrl
+            else if (link.href === builtReleaseUrl) link.href = releaseUrl
+          })
+          document.querySelectorAll("[data-release-version]").forEach((node) => (node.textContent = latest))
+          document.querySelectorAll("[data-release-label]").forEach((node) => (node.textContent = "Latest release"))
+        })
+        .catch(() => {})
+    </script>
   </body>
 </html>
