@@ -4,18 +4,39 @@ export const repository = "https://github.com/rinci-labs/kubedeck"
 // (published by .github/workflows/release.yml). Falls back to the first release offline.
 const fallbackVersion = "0.1.0"
 
+const releaseTag = (tag: string | null | undefined) =>
+  tag && /^v\d+\.\d+\.\d+$/.test(tag) ? tag.slice(1) : null
+
+// Shared CI builders often hit the unauthenticated API rate limit, so the API is tried first and the
+// web redirect (`/releases/latest` -> `/releases/tag/vX.Y.Z`), which is not rate limited, second.
+async function fromApi(): Promise<string | null> {
+  const response = await fetch("https://api.github.com/repos/rinci-labs/kubedeck/releases/latest", {
+    headers: { Accept: "application/vnd.github+json" },
+    signal: AbortSignal.timeout(10_000),
+  })
+  if (!response.ok) return null
+  const { tag_name: tag } = (await response.json()) as { tag_name?: string }
+  return releaseTag(tag)
+}
+
+async function fromRedirect(): Promise<string | null> {
+  const response = await fetch(`${repository}/releases/latest`, {
+    redirect: "manual",
+    signal: AbortSignal.timeout(10_000),
+  })
+  return releaseTag(response.headers.get("location")?.split("/").pop())
+}
+
 async function latestReleaseVersion(): Promise<string> {
-  try {
-    const response = await fetch("https://api.github.com/repos/rinci-labs/kubedeck/releases/latest", {
-      headers: { Accept: "application/vnd.github+json" },
-      signal: AbortSignal.timeout(10_000),
-    })
-    if (!response.ok) return fallbackVersion
-    const { tag_name: tag } = (await response.json()) as { tag_name?: string }
-    return tag && /^v\d+\.\d+\.\d+$/.test(tag) ? tag.slice(1) : fallbackVersion
-  } catch {
-    return fallbackVersion
+  for (const source of [fromApi, fromRedirect]) {
+    try {
+      const version = await source()
+      if (version) return version
+    } catch {
+      // try the next source
+    }
   }
+  return fallbackVersion
 }
 
 export const version = await latestReleaseVersion()
