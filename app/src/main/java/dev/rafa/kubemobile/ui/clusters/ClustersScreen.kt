@@ -165,6 +165,9 @@ fun ClustersScreen(app: AppViewModel, navController: NavController) {
                 },
                 scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(),
                 actions = {
+                    // With no clusters the empty state already offers both actions as full
+                    // buttons; repeating them as icons here would only add noise.
+                    if (profiles.isEmpty()) return@TopAppBar
                     IconButton(onClick = { importOpen = true }) {
                         Icon(
                             imageVector = Icons.Filled.Upload,
