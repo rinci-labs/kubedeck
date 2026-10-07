@@ -560,4 +560,14 @@
     <string name="list_partial">Some namespaces could not be listed; showing what is visible.</string>
     <string name="list_restart_body" formatted="false">Restart the pods of %1$s by stamping a new pod template?</string>
     <string name="container_param">Container</string>
+    <string name="settings_app">App</string>
+    <string name="settings_update_idle">Check GitHub Releases for a newer build</string>
+    <string name="settings_update_checking">Checking for updates…</string>
+    <string name="settings_update_current">Up to date</string>
+    <string name="settings_update_available">%1$s is available</string>
+    <string name="settings_update_downloading">Downloading %1$d%%</string>
+    <string name="settings_update_ready">Ready to install</string>
+    <string name="settings_update_action_check">Check</string>
+    <string name="settings_update_action_view">View</string>
+    <string name="settings_update_action_install">Install</string>
 </resources>

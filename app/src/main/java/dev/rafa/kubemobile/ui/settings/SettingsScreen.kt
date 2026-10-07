@@ -37,6 +37,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Lock
+import dev.rafa.kubemobile.ui.components.ListDivider
+import dev.rafa.kubemobile.ui.components.InfoChip
+import androidx.compose.material3.Button
+import androidx.compose.material.icons.filled.Hexagon
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Warning
@@ -343,81 +347,100 @@ fun SettingsScreen(app: AppViewModel, navController: NavController) {
                 }
             }
 
+            // One "App" card: identity and version on top with the update action beside them, then
+            // the credential note as quiet fine print instead of a second card with a large icon.
             item {
                 SectionCard(
-                    title = stringResource(R.string.label_about),
+                    title = stringResource(R.string.settings_app),
                     modifier = Modifier.cardGutter(),
                 ) {
                     Row(
                         Modifier.padding(horizontal = Spacing.CardPadding, vertical = Spacing.ItemGap),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        IconTile(Icons.Filled.Lock)
+                        IconTile(Icons.Filled.Hexagon)
                         Spacer(Modifier.size(Spacing.ChipPadding))
+                        Column(Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = stringResource(R.string.app_name),
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                                Spacer(Modifier.size(Spacing.ItemGap))
+                                InfoChip("v${BuildConfig.VERSION_NAME}")
+                            }
+                            Spacer(Modifier.size(2.dp))
+                            when (val s = updateState) {
+                                is UpdateState.Idle -> SecondaryText(stringResource(R.string.settings_update_idle), maxLines = 1)
+                                is UpdateState.Checking -> SecondaryText(stringResource(R.string.settings_update_checking), maxLines = 1)
+                                is UpdateState.UpToDate -> SecondaryText(stringResource(R.string.settings_update_current), maxLines = 1)
+                                is UpdateState.Available -> Text(
+                                    text = stringResource(R.string.settings_update_available, s.release.tag_name),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    maxLines = 1,
+                                )
+                                is UpdateState.Downloading -> SecondaryText(
+                                    stringResource(R.string.settings_update_downloading, (s.progress * 100).toInt()),
+                                    maxLines = 1,
+                                )
+                                is UpdateState.ReadyToInstall -> Text(
+                                    text = stringResource(R.string.settings_update_ready),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    maxLines = 1,
+                                )
+                                is UpdateState.Error -> Text(
+                                    text = s.message,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
+                        Spacer(Modifier.size(Spacing.ItemGap))
+                        when (updateState) {
+                            is UpdateState.Checking -> CircularProgressIndicator(
+                                Modifier.size(24.dp),
+                                strokeWidth = 2.dp,
+                            )
+                            is UpdateState.Downloading -> CircularProgressIndicator(
+                                progress = { (updateState as UpdateState.Downloading).progress },
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp,
+                            )
+                            is UpdateState.Available -> Button(onClick = { showUpdateDialog = true }) {
+                                Text(stringResource(R.string.settings_update_action_view))
+                            }
+                            is UpdateState.ReadyToInstall -> Button(onClick = { showUpdateDialog = true }) {
+                                Text(stringResource(R.string.settings_update_action_install))
+                            }
+                            else -> FilledTonalButton(onClick = checkUpdates) {
+                                Text(stringResource(R.string.settings_update_action_check))
+                            }
+                        }
+                    }
+                    ListDivider(Modifier.padding(vertical = Spacing.ItemGap))
+                    Row(
+                        Modifier.padding(horizontal = Spacing.CardPadding, vertical = Spacing.TightGap),
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Lock,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .padding(top = 2.dp)
+                                .size(14.dp),
+                        )
+                        Spacer(Modifier.size(Spacing.ItemGap))
                         Text(
                             text = stringResource(R.string.settings_about_body),
                             style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                }
-            }
-
-            item {
-                SectionCard(
-                    title = "Updates",
-                    modifier = Modifier.cardGutter(),
-                ) {
-                    KeyValueRow("Version", BuildConfig.VERSION_NAME)
-                    ListItem(
-                        colors = transparentRow,
-                        leadingContent = { IconTile(Icons.Filled.SystemUpdate) },
-                        modifier = Modifier.clickable(
-                            enabled = updateState !is UpdateState.Checking && updateState !is UpdateState.Downloading,
-                        ) {
-                            when (updateState) {
-                                is UpdateState.Available, is UpdateState.ReadyToInstall -> showUpdateDialog = true
-                                else -> checkUpdates()
-                            }
-                        },
-                        headlineContent = { Text("Check for updates") },
-                        supportingContent = {
-                            when (val s = updateState) {
-                                is UpdateState.Idle -> SecondaryText("Tap to check GitHub Releases")
-                                is UpdateState.Checking -> SecondaryText("Checking…")
-                                is UpdateState.UpToDate -> SecondaryText("App is up to date")
-                                is UpdateState.Available -> SecondaryText("${s.release.tag_name} available")
-                                is UpdateState.Downloading -> SecondaryText("Downloading ${(s.progress * 100).toInt()}%")
-                                is UpdateState.ReadyToInstall -> SecondaryText("Ready to install")
-                                is UpdateState.Error -> Text(
-                                    s.message,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.error,
-                                )
-                            }
-                        },
-                        trailingContent = {
-                            when (updateState) {
-                                is UpdateState.Checking -> CircularProgressIndicator(
-                                    Modifier.size(24.dp),
-                                    strokeWidth = 2.dp,
-                                )
-                                is UpdateState.Downloading -> CircularProgressIndicator(
-                                    progress = { (updateState as UpdateState.Downloading).progress },
-                                    modifier = Modifier.size(24.dp),
-                                    strokeWidth = 2.dp,
-                                )
-                                is UpdateState.Available -> FilledTonalButton(onClick = { showUpdateDialog = true }) {
-                                    Text("View")
-                                }
-                                is UpdateState.ReadyToInstall -> FilledTonalButton(onClick = { showUpdateDialog = true }) {
-                                    Text("Install")
-                                }
-                                else -> OutlinedButton(onClick = checkUpdates) {
-                                    Text("Check")
-                                }
-                            }
-                        },
-                    )
                 }
             }
         }
