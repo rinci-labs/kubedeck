@@ -186,14 +186,7 @@ fun ClustersScreen(app: AppViewModel, navController: NavController) {
                 EmptyState(
                     title = stringResource(R.string.clusters_empty_title),
                     body = stringResource(R.string.clusters_empty_body),
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Filled.Dns,
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    },
+                    icon = { IconTile(icon = Icons.Outlined.Dns, size = 56.dp) },
                     actionLabel = stringResource(R.string.action_import_kubeconfig),
                     onAction = { importOpen = true },
                     secondaryActionLabel = stringResource(R.string.clusters_add_title),

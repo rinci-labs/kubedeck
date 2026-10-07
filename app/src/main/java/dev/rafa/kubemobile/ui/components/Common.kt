@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -203,10 +205,10 @@ fun EmptyState(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         icon?.invoke()
-        if (icon != null) Spacer(Modifier.size(Spacing.ItemGap))
+        if (icon != null) Spacer(Modifier.size(Spacing.ContentInset))
         Text(
             text = title,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleLarge,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.size(Spacing.ItemGap))
@@ -215,22 +217,37 @@ fun EmptyState(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
+            modifier = Modifier.widthIn(max = EmptyStateMaxWidth),
         )
         if ((actionLabel != null && onAction != null) ||
             (secondaryActionLabel != null && onSecondaryAction != null)
         ) {
-            Spacer(Modifier.size(Spacing.ContentInset))
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap)) {
-                if (secondaryActionLabel != null && onSecondaryAction != null) {
-                    OutlinedButton(onClick = onSecondaryAction) { Text(secondaryActionLabel) }
-                }
+            Spacer(Modifier.size(Spacing.SectionGap))
+            // Stacked, full width, primary first: two labels side by side wrap mid-word on a
+            // phone, and a stack keeps both targets large and the main path obvious.
+            Column(
+                modifier = Modifier.widthIn(max = EmptyStateMaxWidth).fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
+            ) {
                 if (actionLabel != null && onAction != null) {
-                    Button(onClick = onAction) { Text(actionLabel) }
+                    Button(
+                        onClick = onAction,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                    ) { Text(actionLabel, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                }
+                if (secondaryActionLabel != null && onSecondaryAction != null) {
+                    OutlinedButton(
+                        onClick = onSecondaryAction,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                    ) { Text(secondaryActionLabel, maxLines = 1, overflow = TextOverflow.Ellipsis) }
                 }
             }
         }
     }
 }
+
+/** Keeps empty-state copy and buttons at a readable measure on wide screens and tablets. */
+private val EmptyStateMaxWidth = 360.dp
 
 /** Error surface that always shows the API server's own message plus a retry affordance. */
 @Composable
