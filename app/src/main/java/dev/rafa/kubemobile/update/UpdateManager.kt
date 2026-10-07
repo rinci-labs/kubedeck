@@ -83,21 +83,31 @@ class UpdateManager(private val context: Context) {
                 outFile.outputStream().use { output ->
                     val buffer = ByteArray(8192)
                     var bytesRead = 0L
+                    var lastPercent = -1
                     while (true) {
                         val read = input.read(buffer)
                         if (read == -1) break
                         output.write(buffer, 0, read)
                         bytesRead += read
                         if (totalBytes > 0) {
-                            onProgress((bytesRead.toFloat() / totalBytes.toFloat()).coerceAtMost(1f))
+                            // Report on the main thread and only when the whole percent changes:
+                            // the caller writes Compose state, which must not be hammered from IO.
+                            val fraction = (bytesRead.toFloat() / totalBytes.toFloat()).coerceAtMost(1f)
+                            val percent = (fraction * 100).toInt()
+                            if (percent != lastPercent) {
+                                lastPercent = percent
+                                withContext(Dispatchers.Main) { onProgress(fraction) }
+                            }
                         }
                     }
                 }
             }
 
-            onProgress(1f)
+            withContext(Dispatchers.Main) { onProgress(1f) }
             outFile
-        } catch (_: Exception) {
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (_: Throwable) {
             null
         }
     }
@@ -136,9 +146,24 @@ class UpdateManager(private val context: Context) {
             }
 
             null
-        } catch (e: Exception) {
-            InstallResult.Error(e.message ?: "Verification failed")
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            InstallResult.Error(e.message ?: e.javaClass.simpleName)
         }
+    }
+
+    /**
+     * A previously downloaded APK for [tag] that still passes verification, so an install that was
+     * interrupted (for example by the system restarting the app after the "install unknown apps"
+     * permission was granted) resumes without downloading again.
+     */
+    suspend fun cachedApk(tag: String, sumsAsset: ReleaseAsset?): File? = withContext(Dispatchers.IO) {
+        val file = File(File(context.cacheDir, "updates"), "update.apk")
+        if (!file.isFile) return@withContext null
+        val info = runCatching { getArchiveInfo(file) }.getOrNull() ?: return@withContext null
+        if (info.versionName?.removePrefix("v") != tag.removePrefix("v")) return@withContext null
+        if (verifyApk(file, sumsAsset) != null) null else file
     }
 
     suspend fun verifyAndInstall(
@@ -168,10 +193,12 @@ class UpdateManager(private val context: Context) {
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-            activity.startActivity(intent)
+            withContext(Dispatchers.Main) { activity.startActivity(intent) }
             InstallResult.Launched
-        } catch (e: Exception) {
-            InstallResult.Error(e.message ?: "Unknown error")
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            InstallResult.Error(e.message ?: e.javaClass.simpleName)
         }
     }
 

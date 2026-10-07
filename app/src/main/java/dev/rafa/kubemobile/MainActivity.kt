@@ -12,6 +12,7 @@ import dev.rafa.kubemobile.ui.KubeTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        CrashLog.install(this)
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContent {

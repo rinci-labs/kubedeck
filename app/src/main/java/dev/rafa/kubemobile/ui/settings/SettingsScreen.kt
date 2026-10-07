@@ -91,6 +91,8 @@ import dev.rafa.kubemobile.ui.components.ListGroup
 import dev.rafa.kubemobile.ui.components.LoadingState
 import dev.rafa.kubemobile.ui.components.SectionCard
 import dev.rafa.kubemobile.ui.navigateToTop
+import androidx.compose.foundation.layout.Arrangement
+import dev.rafa.kubemobile.ui.copyToClipboard
 
 private sealed interface UpdateState {
     data object Idle : UpdateState
@@ -125,6 +127,68 @@ fun SettingsScreen(app: AppViewModel, navController: NavController) {
     var updateState: UpdateState by remember { mutableStateOf(UpdateState.Idle) }
     var currentAvailable by remember { mutableStateOf<UpdateResult.Available?>(null) }
     var showUpdateDialog by remember { mutableStateOf(false) }
+
+    var pendingInstall by remember { mutableStateOf<java.io.File?>(null) }
+    var lastCrash by remember { mutableStateOf(dev.rafa.kubemobile.CrashLog.read(context)) }
+
+    val runInstall: (java.io.File) -> Unit = { file ->
+        scope.launch {
+            val activity = context.findActivity()
+            if (activity == null) {
+                updateState = UpdateState.Error("Activity context unavailable")
+                return@launch
+            }
+            val sums = currentAvailable?.sumsAsset
+            val res = try {
+                app.updateManager.verifyAndInstall(file, sums, activity)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                InstallResult.Error(e.message ?: e.javaClass.simpleName)
+            }
+            when (res) {
+                is InstallResult.Launched -> {
+                    pendingInstall = null
+                    showUpdateDialog = false
+                }
+                is InstallResult.NeedsPermission -> {
+                    // Granting "install unknown apps" can restart the app; the verified APK stays
+                    // in the cache and the install resumes when the screen comes back.
+                    pendingInstall = file
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        runCatching {
+                            context.startActivity(
+                                Intent(
+                                    Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                                    Uri.parse("package:${context.packageName}"),
+                                ),
+                            )
+                        }.onFailure { updateState = UpdateState.Error(it.message ?: "Cannot open settings") }
+                    }
+                }
+                is InstallResult.HashMismatch -> updateState = UpdateState.Error("Hash mismatch")
+                is InstallResult.PackageMismatch -> updateState = UpdateState.Error("Package name mismatch")
+                is InstallResult.CertMismatch -> updateState = UpdateState.Error("Signing certificate mismatch")
+                is InstallResult.Error -> updateState = UpdateState.Error(res.msg)
+            }
+        }
+    }
+
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                val file = pendingInstall
+                if (file != null &&
+                    (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || context.packageManager.canRequestPackageInstalls())
+                ) {
+                    runInstall(file)
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     val backgroundRelease by app.updateAvailable.collectAsStateWithLifecycle()
     LaunchedEffect(backgroundRelease) {
@@ -182,6 +246,41 @@ fun SettingsScreen(app: AppViewModel, navController: NavController) {
             modifier = Modifier.padding(padding).fillMaxSize(),
             contentPadding = PaddingValues(top = Spacing.TopBarToContent, bottom = ListBottomPadding),
         ) {
+            lastCrash?.let { crash ->
+                item {
+                    SectionCard(
+                        title = stringResource(R.string.settings_crash_title),
+                        modifier = Modifier.cardGutter(),
+                    ) {
+                        Text(
+                            text = crash.lineSequence().drop(4).firstOrNull { it.isNotBlank() }.orEmpty(),
+                            style = MaterialTheme.typography.bodySmall.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace),
+                            color = MaterialTheme.colorScheme.error,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(horizontal = Spacing.CardPadding, vertical = Spacing.TightGap),
+                        )
+                        SecondaryText(
+                            text = stringResource(R.string.settings_crash_body),
+                            modifier = Modifier.padding(horizontal = Spacing.CardPadding, vertical = Spacing.TightGap),
+                        )
+                        Row(
+                            Modifier.padding(horizontal = Spacing.CardPadding, vertical = Spacing.ItemGap),
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
+                        ) {
+                            FilledTonalButton(onClick = { context.copyToClipboard("KubeDeck crash", crash) }) {
+                                Text(stringResource(R.string.settings_crash_copy))
+                            }
+                            OutlinedButton(onClick = {
+                                dev.rafa.kubemobile.CrashLog.clear(context)
+                                lastCrash = null
+                            }) {
+                                Text(stringResource(R.string.settings_crash_dismiss))
+                            }
+                        }
+                    }
+                }
+            }
             when {
                 profile == null -> item {
                     ClusterStatusCard(
@@ -534,40 +633,26 @@ fun SettingsScreen(app: AppViewModel, navController: NavController) {
             },
             confirmButton = {
                 when (val s = updateState) {
-                    is UpdateState.ReadyToInstall -> FilledTonalButton(onClick = {
-                        scope.launch {
-                            val activity = context.findActivity()
-                            if (activity != null) {
-                                when (val res = app.updateManager.verifyAndInstall(s.file, sumsAsset, activity)) {
-                                    is InstallResult.Launched -> showUpdateDialog = false
-                                    is InstallResult.NeedsPermission -> {
-                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                            context.startActivity(
-                                                Intent(
-                                                    Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
-                                                    Uri.parse("package:${context.packageName}"),
-                                                ),
-                                            )
-                                        }
-                                    }
-                                    is InstallResult.HashMismatch -> updateState = UpdateState.Error("Hash mismatch")
-                                    is InstallResult.PackageMismatch -> updateState = UpdateState.Error("Package name mismatch")
-                                    is InstallResult.CertMismatch -> updateState = UpdateState.Error("Signing certificate mismatch")
-                                    is InstallResult.Error -> updateState = UpdateState.Error(res.msg)
-                                }
-                            } else {
-                                updateState = UpdateState.Error("Activity context unavailable")
-                            }
-                        }
-                    }) { Text("Install") }
+                    is UpdateState.ReadyToInstall -> FilledTonalButton(onClick = { runInstall(s.file) }) {
+                        Text("Install")
+                    }
                     is UpdateState.Downloading -> FilledTonalButton(onClick = {}, enabled = false) {
                         Text("Downloading…")
                     }
                     else -> FilledTonalButton(onClick = {
                         updateState = UpdateState.Downloading(0f)
                         scope.launch {
-                            val file = app.updateManager.downloadUpdate(apkAsset) { p ->
-                                updateState = UpdateState.Downloading(p)
+                            val file = try {
+                                // Reuse an APK that was already downloaded and verified for this
+                                // release, then fall back to a fresh download.
+                                app.updateManager.cachedApk(release.tag_name, sumsAsset)
+                                    ?: app.updateManager.downloadUpdate(apkAsset) { p ->
+                                        updateState = UpdateState.Downloading(p)
+                                    }
+                            } catch (e: kotlinx.coroutines.CancellationException) {
+                                throw e
+                            } catch (_: Throwable) {
+                                null
                             }
                             if (file != null) {
                                 val verifyError = app.updateManager.verifyApk(file, sumsAsset)
