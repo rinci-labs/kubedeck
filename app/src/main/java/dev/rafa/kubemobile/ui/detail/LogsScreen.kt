@@ -7,6 +7,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material.icons.automirrored.filled.WrapText
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -20,6 +29,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.ClearAll
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SearchOff
+import dev.rafa.kubemobile.ui.components.SearchField
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -95,6 +108,19 @@ fun LogsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var optionsOpen by remember { mutableStateOf(false) }
+    var searchOpen by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    // Search and the level filter only change what is drawn, never the stream itself.
+    val visibleLines = remember(state.lines, state.query, state.minSeverity) {
+        val query = state.query.trim()
+        if (query.isEmpty() && state.minSeverity == 0) {
+            state.lines
+        } else {
+            state.lines.filter { line ->
+                (query.isEmpty() || line.contains(query, ignoreCase = true)) &&
+                    (state.minSeverity == 0 || logSeverity(line) >= state.minSeverity)
+            }
+        }
+    }
 
     LaunchedEffect(namespace, pod, workloadKind) { vm.start(namespace, pod, workloadKind, initialContainer) }
 
@@ -109,9 +135,9 @@ fun LogsScreen(
         }
     }
     LaunchedEffect(atBottom) { vm.setFollowed(atBottom) }
-    LaunchedEffect(state.lines.size, state.followed) {
-        if (state.followed && state.lines.isNotEmpty()) {
-            listState.scrollToItem(state.lines.lastIndex)
+    LaunchedEffect(visibleLines.size, state.followed) {
+        if (state.followed && visibleLines.isNotEmpty()) {
+            listState.scrollToItem(visibleLines.lastIndex)
         }
     }
 
@@ -130,6 +156,8 @@ fun LogsScreen(
                             text = listOfNotNull(
                                 namespace.takeIf { it.isNotBlank() },
                                 state.container.takeIf { !state.tagged },
+                                LOG_SINCE_OPTIONS.firstOrNull { it.second != null && it.second == state.sinceSeconds }
+                                    ?.let { stringResource(R.string.logs_since_label, it.first) },
                                 state.cappedFrom?.let {
                                     stringResource(R.string.logs_capped, state.trackedPods, it)
                                 },
@@ -157,20 +185,53 @@ fun LogsScreen(
                     }
                 },
                 actions = {
+                    IconButton(
+                        onClick = {
+                            searchOpen = !searchOpen
+                            if (!searchOpen) {
+                                vm.setQuery("")
+                                vm.setMinSeverity(0)
+                            }
+                        },
+                    ) {
+                        Icon(
+                            imageVector = if (searchOpen) Icons.Filled.SearchOff else Icons.Filled.Search,
+                            contentDescription = stringResource(R.string.logs_search),
+                            tint = if (searchOpen) MaterialTheme.colorScheme.primary else Color.Unspecified,
+                        )
+                    }
+                    // Wrapping is the toggle reached for most while reading, so it gets its own
+                    // button; it highlights while on.
+                    IconButton(onClick = { vm.setWrap(!state.wrap) }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.WrapText,
+                            contentDescription = stringResource(R.string.logs_wrap),
+                            tint = if (state.wrap) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                        )
+                    }
                     IconButton(onClick = { optionsOpen = true }) {
                         Icon(
                             imageVector = Icons.Filled.Tune,
                             contentDescription = stringResource(R.string.logs_options),
                         )
                     }
-                    IconButton(onClick = { vm.restart() }) {
-                        Icon(
-                            imageVector = Icons.Filled.Refresh,
-                            contentDescription = stringResource(R.string.action_refresh),
-                        )
-                    }
                     OverflowMenu(
                         actions = listOf(
+                            MenuAction(
+                                label = stringResource(R.string.action_refresh),
+                                onClick = vm::restart,
+                                leadingIcon = Icons.Filled.Refresh,
+                            ),
+                            MenuAction(
+                                label = stringResource(R.string.logs_clear),
+                                onClick = vm::clear,
+                                enabled = state.lines.isNotEmpty(),
+                                leadingIcon = Icons.Filled.ClearAll,
+                            ),
                             MenuAction(
                                 label = stringResource(R.string.logs_copy_all),
                                 onClick = {
@@ -200,7 +261,7 @@ fun LogsScreen(
                     shape = KubeShapes.Pill,
                     onClick = {
                         vm.setFollowed(true)
-                        scope.launch { listState.scrollToItem(state.lines.lastIndex.coerceAtLeast(0)) }
+                        scope.launch { listState.scrollToItem(visibleLines.lastIndex.coerceAtLeast(0)) }
                     },
                     label = { Text(stringResource(R.string.action_jump_latest)) },
                     leadingIcon = { Icon(Icons.Filled.ArrowDownward, contentDescription = null, Modifier.size(16.dp)) },
@@ -211,6 +272,16 @@ fun LogsScreen(
         Column(Modifier.padding(padding).fillMaxSize()) {
             if (state.isWorkload) {
                 PodSelectorRow(state = state, vm = vm)
+            }
+            if (searchOpen) {
+                LogSearchBar(
+                    query = state.query,
+                    onQuery = vm::setQuery,
+                    minSeverity = state.minSeverity,
+                    onMinSeverity = vm::setMinSeverity,
+                    matches = visibleLines.size,
+                    total = state.lines.size,
+                )
             }
             Box(Modifier.fillMaxSize()) {
                 when {
@@ -239,23 +310,41 @@ fun LogsScreen(
                         onAction = vm::restart,
                     )
 
-                    else -> Surface(
-                        color = MaterialTheme.colorScheme.surfaceContainerLowest,
-                        modifier = Modifier.fillMaxSize(),
+                    else -> BoxWithConstraints(
+                        Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.surfaceContainerLowest),
                     ) {
+                        // Every row is at least the viewport wide, so severity washes span the
+                        // screen even when wrapping is off and the list scrolls sideways.
+                        val viewport = maxWidth
+                        val horizontal = rememberScrollState()
                         LazyColumn(
                             state = listState,
-                            modifier = Modifier.fillMaxSize(),
-                            // Same gutter as every other screen, so a log line starts on the same
-                            // vertical line as the rest of the app's content.
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .then(if (state.wrap) Modifier else Modifier.horizontalScroll(horizontal)),
                             contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                                horizontal = Spacing.ScreenPadding,
-                                vertical = Spacing.TightGap,
+                                vertical = Spacing.ItemGap,
                             ),
                         ) {
-                            itemsIndexed(state.lines) { _, line ->
-                                LogLine(line)
+                            itemsIndexed(visibleLines) { _, line ->
+                                LogLine(
+                                    line = line,
+                                    tagged = state.tagged,
+                                    wrap = state.wrap,
+                                    minWidth = viewport,
+                                    highlight = state.query.trim(),
+                                )
                             }
+                        }
+                        if (visibleLines.isEmpty()) {
+                            SecondaryText(
+                                text = stringResource(R.string.logs_no_matches),
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .padding(Spacing.SectionGap),
+                            )
                         }
                     }
                 }
@@ -282,6 +371,8 @@ fun LogsScreen(
             onContainer = vm::setContainer,
             onTail = vm::setTail,
             onTimestamps = vm::setTimestamps,
+            onWrap = vm::setWrap,
+            onSince = vm::setSince,
             onFollow = vm::setFollow,
             onPrevious = vm::setPrevious,
             onDismiss = { optionsOpen = false },
@@ -347,31 +438,140 @@ private fun PodSelectorRow(state: LogsUiState, vm: LogsViewModel) {
     }
 }
 
+/** One parsed log row: an optional pod tag, an optional timestamp and the message itself. */
+private data class ParsedLogLine(
+    val pod: String?,
+    val time: String?,
+    val message: String,
+    val severity: Int,
+)
+
+private val LOG_TIMESTAMP = Regex("""^(\d{4}-\d{2}-\d{2}T(\d{2}:\d{2}:\d{2})(?:\.(\d{1,9}))?(?:Z|[+-]\d{2}:\d{2}))\s?""")
+
+/**
+ * Splits the `pod | ` prefix a merged stream adds and the RFC 3339 stamp `--timestamps` adds, so
+ * both can be drawn as quiet metadata instead of repeating a 25-character pod name on every row.
+ */
+private fun parseLogLine(line: String, tagged: Boolean): ParsedLogLine {
+    var rest = line
+    var pod: String? = null
+    if (tagged) {
+        val split = rest.indexOf(" | ")
+        if (split > 0) {
+            pod = rest.substring(0, split)
+            rest = rest.substring(split + 3)
+        } else if (rest.endsWith(" |")) {
+            pod = rest.removeSuffix(" |")
+            rest = ""
+        }
+    }
+    var time: String? = null
+    LOG_TIMESTAMP.find(rest)?.let { match ->
+        val millis = match.groupValues[3].take(3)
+        time = if (millis.isEmpty()) match.groupValues[2] else "${match.groupValues[2]}.$millis"
+        rest = rest.substring(match.range.last + 1)
+    }
+    return ParsedLogLine(pod = pod, time = time, message = rest, severity = logSeverity(rest))
+}
+
+/**
+ * The short, recognisable part of a pod name: the random suffix a ReplicaSet or StatefulSet adds
+ * (`web-86c8bd46c-b6x9w` → `b6x9w`). The full name is in the pod selector above the log.
+ */
+private fun shortPodName(pod: String): String = pod.substringAfterLast('-').ifBlank { pod }
+
+/** Calm, distinguishable tag colours for merged pods; a pod keeps its colour for the session. */
+private val POD_TAG_COLORS_DARK = listOf(
+    Color(0xFF8FD8AF), Color(0xFF8EC5F2), Color(0xFFE5B45C),
+    Color(0xFFC9A7F0), Color(0xFFF0A08C), Color(0xFF7FD6D0),
+)
+private val POD_TAG_COLORS_LIGHT = listOf(
+    Color(0xFF2F6B4F), Color(0xFF2D5F8A), Color(0xFF7A5200),
+    Color(0xFF6A43A0), Color(0xFF9A3E2A), Color(0xFF1F6E69),
+)
+
 @Composable
-private fun LogLine(line: String) {
-    val severity = remember(line) { logSeverity(line) }
-    val color = when (severity) {
+private fun podTagColor(pod: String): Color {
+    val palette = if (androidx.compose.foundation.isSystemInDarkTheme()) POD_TAG_COLORS_DARK else POD_TAG_COLORS_LIGHT
+    return palette[Math.floorMod(pod.hashCode(), palette.size)]
+}
+
+private val LogTextStyle = TextStyle(
+    fontFamily = FontFamily.Monospace,
+    fontSize = 12.sp,
+    lineHeight = 17.sp,
+)
+
+/**
+ * One log row. Severity reads from a thin accent bar and a faint wash rather than a whole line of
+ * red text, so a burst of errors stays legible. Metadata (pod tag, time) is muted and sits in front
+ * of the message; with wrapping on, continuation lines hang under the message, not under the tag.
+ */
+@Composable
+private fun LogLine(
+    line: String,
+    tagged: Boolean,
+    wrap: Boolean,
+    minWidth: androidx.compose.ui.unit.Dp,
+    highlight: String = "",
+) {
+    val parsed = remember(line, tagged) { parseLogLine(line, tagged) }
+    val accent = when (parsed.severity) {
         2 -> MaterialTheme.colorScheme.error
         1 -> dev.rafa.kubemobile.ui.toneColors(dev.rafa.kubemobile.ops.ResourceHealth.Tone.WARN).content
-        else -> MaterialTheme.colorScheme.onSurface
+        else -> Color.Transparent
     }
-    SelectionContainer {
+    val messageColor = when (parsed.severity) {
+        2 -> MaterialTheme.colorScheme.onErrorContainer
+        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.92f)
+    }
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    val matchColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+    val message = remember(parsed.message, highlight, matchColor) {
+        highlightMatches(parsed.message, highlight, matchColor)
+    }
+    Row(
+        modifier = Modifier
+            .widthIn(min = minWidth)
+            .background(if (parsed.severity == 0) Color.Transparent else accent.copy(alpha = 0.07f))
+            .height(IntrinsicSize.Min),
+    ) {
         Box(
             Modifier
-                .fillMaxWidth()
-                .background(
-                    if (severity == 0) Color.Transparent else color.copy(alpha = 0.08f),
-                ),
+                .width(2.dp)
+                .fillMaxHeight()
+                .background(accent),
+        )
+        Row(
+            modifier = Modifier.padding(start = Spacing.ChipPadding - 2.dp, end = Spacing.ScreenPadding, top = 1.dp, bottom = 1.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
         ) {
-            Text(
-                text = line,
-                style = TextStyle(
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 11.sp,
-                    lineHeight = 15.sp,
-                ),
-                color = color,
-            )
+            parsed.pod?.let { pod ->
+                Text(
+                    text = shortPodName(pod),
+                    style = LogTextStyle,
+                    color = podTagColor(pod),
+                    maxLines = 1,
+                    softWrap = false,
+                )
+            }
+            parsed.time?.let { time ->
+                Text(
+                    text = time,
+                    style = LogTextStyle,
+                    color = muted,
+                    maxLines = 1,
+                    softWrap = false,
+                )
+            }
+            SelectionContainer(if (wrap) Modifier.weight(1f) else Modifier) {
+                Text(
+                    text = message,
+                    style = LogTextStyle,
+                    color = messageColor,
+                    softWrap = wrap,
+                )
+            }
         }
     }
 }
@@ -383,6 +583,8 @@ private fun LogOptionsSheet(
     onContainer: (String) -> Unit,
     onTail: (Int) -> Unit,
     onTimestamps: (Boolean) -> Unit,
+    onWrap: (Boolean) -> Unit,
+    onSince: (Long?) -> Unit,
     onFollow: (Boolean) -> Unit,
     onPrevious: (Boolean) -> Unit,
     onDismiss: () -> Unit,
@@ -433,11 +635,34 @@ private fun LogOptionsSheet(
                     )
                 }
             }
+            LogsSheetLabel(stringResource(R.string.logs_since))
+            Row(
+                Modifier
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = Spacing.SheetPadding),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
+            ) {
+                LOG_SINCE_OPTIONS.forEach { (label, seconds) ->
+                    FilterChip(
+                        shape = KubeShapes.Pill,
+                        selected = state.sinceSeconds == seconds,
+                        onClick = { onSince(seconds) },
+                        label = { Text(label) },
+                    )
+                }
+            }
             Spacer(Modifier.size(Spacing.ContentInset))
-            // The three stream toggles read as one settings group: a single rounded card with
+            // The stream toggles read as one settings group: a single rounded card with
             // inset dividers, rather than three loose full-bleed rows.
             val rowColors = ListItemDefaults.colors(containerColor = Color.Transparent)
             ListGroup {
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.logs_wrap)) },
+                    supportingContent = { SecondaryText(stringResource(R.string.logs_wrap_hint)) },
+                    trailingContent = { Switch(checked = state.wrap, onCheckedChange = onWrap) },
+                    colors = rowColors,
+                )
+                ListDivider()
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.label_timestamps)) },
                     trailingContent = { Switch(checked = state.timestamps, onCheckedChange = onTimestamps) },
@@ -476,4 +701,76 @@ private fun LogsSheetLabel(text: String) {
             bottom = Spacing.TightGap,
         ),
     )
+}
+
+/** Marks every case-insensitive occurrence of [query] with a soft mint wash. */
+private fun highlightMatches(
+    text: String,
+    query: String,
+    color: Color,
+): androidx.compose.ui.text.AnnotatedString {
+    if (query.isEmpty()) return androidx.compose.ui.text.AnnotatedString(text)
+    return androidx.compose.ui.text.buildAnnotatedString {
+        append(text)
+        var from = text.indexOf(query, ignoreCase = true)
+        while (from >= 0) {
+            addStyle(androidx.compose.ui.text.SpanStyle(background = color), from, from + query.length)
+            from = text.indexOf(query, from + query.length, ignoreCase = true)
+        }
+    }
+}
+
+/**
+ * Search over the transcript plus a level filter. Both only narrow what is drawn, so the stream
+ * keeps running underneath and clearing the query brings every line straight back.
+ */
+@Composable
+private fun LogSearchBar(
+    query: String,
+    onQuery: (String) -> Unit,
+    minSeverity: Int,
+    onMinSeverity: (Int) -> Unit,
+    matches: Int,
+    total: Int,
+) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Spacing.ScreenPadding, vertical = Spacing.TightGap),
+    ) {
+        SearchField(
+            value = query,
+            onValueChange = onQuery,
+            placeholder = stringResource(R.string.logs_search),
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = Spacing.ItemGap),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.ItemGap),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            listOf(
+                0 to stringResource(R.string.logs_level_all),
+                1 to stringResource(R.string.logs_level_warn),
+                2 to stringResource(R.string.logs_level_error),
+            ).forEach { (level, label) ->
+                FilterChip(
+                    shape = KubeShapes.Pill,
+                    selected = minSeverity == level,
+                    onClick = { onMinSeverity(level) },
+                    label = { Text(label, maxLines = 1) },
+                )
+            }
+            Spacer(Modifier.weight(1f))
+            if (query.isNotBlank() || minSeverity > 0) {
+                Text(
+                    text = stringResource(R.string.logs_matches, matches, total),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+            }
+        }
+    }
 }

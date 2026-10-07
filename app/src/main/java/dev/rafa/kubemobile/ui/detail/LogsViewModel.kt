@@ -49,6 +49,14 @@ data class LogsUiState(
     val followed: Boolean = true,
     val tailLines: Int = 500,
     val timestamps: Boolean = false,
+    /** Soft-wrap long lines; off keeps one log line per row and scrolls sideways. */
+    val wrap: Boolean = true,
+    /** Server-side time window (`sinceSeconds`); null reads as far back as the tail allows. */
+    val sinceSeconds: Long? = null,
+    /** Display filter over the transcript; never restarts the stream. */
+    val query: String = "",
+    /** 0 shows everything, 1 warnings and errors, 2 errors only. */
+    val minSeverity: Int = 0,
     val follow: Boolean = true,
     val previous: Boolean = false,
     val container: String? = null,
@@ -104,6 +112,8 @@ class LogsViewModel(
             container = saved,
             tailLines = savedState.get<Int>(KEY_TAIL) ?: 500,
             timestamps = savedState.get<Boolean>(KEY_TIMESTAMPS) ?: false,
+            wrap = savedState.get<Boolean>(KEY_WRAP) ?: true,
+            sinceSeconds = savedState.get<Long>(KEY_SINCE),
             follow = savedState.get<Boolean>(KEY_FOLLOW) ?: true,
             previous = savedState.get<Boolean>(KEY_PREVIOUS) ?: false,
             workloadKind = workloadKind,
@@ -220,6 +230,31 @@ class LogsViewModel(
         restart()
     }
 
+    /** Display-only: no restart, the transcript is kept. */
+    fun setWrap(value: Boolean) {
+        savedState[KEY_WRAP] = value
+        _state.value = _state.value.copy(wrap = value)
+    }
+
+    fun setSince(seconds: Long?) {
+        savedState[KEY_SINCE] = seconds
+        _state.value = _state.value.copy(sinceSeconds = seconds, lines = emptyList())
+        restart()
+    }
+
+    fun setQuery(value: String) {
+        _state.value = _state.value.copy(query = value)
+    }
+
+    fun setMinSeverity(value: Int) {
+        _state.value = _state.value.copy(minSeverity = value)
+    }
+
+    /** Empties the transcript; a live stream keeps appending new lines after it. */
+    fun clear() {
+        _state.value = _state.value.copy(lines = emptyList())
+    }
+
     fun setTimestamps(value: Boolean) {
         savedState[KEY_TIMESTAMPS] = value
         _state.value = _state.value.copy(timestamps = value, lines = emptyList())
@@ -280,6 +315,7 @@ class LogsViewModel(
                 tailLines = current.tailLines,
                 follow = current.follow,
                 timestamps = current.timestamps,
+                sinceSeconds = current.sinceSeconds,
                 previous = current.previous,
             )
             val flow = if (targets.size > 1) {
@@ -327,6 +363,8 @@ class LogsViewModel(
         private const val KEY_CONTAINER = "logs.container"
         private const val KEY_TAIL = "logs.tail"
         private const val KEY_TIMESTAMPS = "logs.timestamps"
+        private const val KEY_WRAP = "logs.wrap"
+        private const val KEY_SINCE = "logs.since"
         private const val KEY_FOLLOW = "logs.follow"
         private const val KEY_PREVIOUS = "logs.previous"
     }
@@ -335,13 +373,38 @@ class LogsViewModel(
 /** Tail options offered in the options sheet. */
 val LOG_TAIL_OPTIONS = listOf(100, 500, 1000, 5000)
 
-/** True when a log line reads like an error or a warning, for colour coding. */
-fun logSeverity(line: String): Int = when {
-    line.contains("ERROR", true) ||
-        line.contains("FATAL", true) ||
-        line.contains("panic", true) ||
-        line.contains("Exception", true) -> 2
+/** Time windows offered in the options sheet, as (label, seconds); null means no window. */
+val LOG_SINCE_OPTIONS: List<Pair<String, Long?>> = listOf(
+    "All" to null,
+    "5m" to 300L,
+    "15m" to 900L,
+    "1h" to 3_600L,
+    "6h" to 21_600L,
+    "24h" to 86_400L,
+)
 
-    line.contains("WARN", true) || line.contains("WARNING", true) -> 1
-    else -> 0
+private val JSON_LEVEL = Regex(""""(?:level|severity|lvl)"\s*:\s*"([A-Za-z]+)"""")
+
+/**
+ * 2 for an error, 1 for a warning, 0 otherwise. A structured `"level"` field wins over keyword
+ * matching, so a JSON info line that merely mentions "error" in a message is not painted red.
+ */
+fun logSeverity(line: String): Int {
+    JSON_LEVEL.find(line)?.groupValues?.get(1)?.lowercase()?.let { level ->
+        return when (level) {
+            "error", "err", "fatal", "panic", "critical", "crit", "alert", "emerg" -> 2
+            "warn", "warning" -> 1
+            else -> 0
+        }
+    }
+    return when {
+        line.contains("ERROR", true) ||
+            line.contains("FATAL", true) ||
+            line.contains("panic", true) ||
+            line.contains("Exception", true) ||
+            line.contains("TypeError") -> 2
+
+        line.contains("WARN", true) -> 1
+        else -> 0
+    }
 }

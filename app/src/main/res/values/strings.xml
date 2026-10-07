@@ -297,6 +297,17 @@
     <!-- Logs -->
     <string name="logs_title" formatted="false">Logs · %1$s</string>
     <string name="logs_tail_size">Tail</string>
+    <string name="logs_wrap">Wrap lines</string>
+    <string name="logs_wrap_hint">Off keeps each line on one row and scrolls sideways</string>
+    <string name="logs_search">Search logs</string>
+    <string name="logs_clear">Clear</string>
+    <string name="logs_since">Time range</string>
+    <string name="logs_since_label">last %1$s</string>
+    <string name="logs_matches">%1$d of %2$d</string>
+    <string name="logs_no_matches">No lines match</string>
+    <string name="logs_level_all">All</string>
+    <string name="logs_level_warn">Warnings+</string>
+    <string name="logs_level_error">Errors</string>
     <string name="logs_share">Share log</string>
     <string name="logs_copy_all">Copy whole log</string>
     <string name="logs_empty">Waiting for output…</string>
